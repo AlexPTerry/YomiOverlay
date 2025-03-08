@@ -42,11 +42,11 @@ module.exports = {
           config: './webpack.renderer.config.js',
           entryPoints: [
             {
-              html: './src/index.html',
-              js: './src/renderer.js',
-              name: 'main_window',
+              html: './renderer/overlay.html',
+              js: './renderer/overlay.js',
+              name: 'overlay',
               preload: {
-                js: './src/preload.js',
+                js: './main/preload.js',
               },
             },
           ],
