@@ -18,8 +18,8 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: path.resolve(__dirname, "../extensions"), // Adjust if needed
-          to: path.resolve(__dirname, ".webpack/main/extensions"), // Ensure it lands where expected
+          from: path.resolve(__dirname, "extensions"), // Adjust if needed
+          to: "extensions", // Ensure it lands where expected
         },
         require.resolve('electron-chrome-extensions/preload'),
       ],
