@@ -31,6 +31,7 @@ let ignoreMouse = true;
 let selectionTimer = false;
 
 document.body.addEventListener('mouseover', (event) => {
+    console.log(event.target);
     
     // Yomitan popup fulfils the last condition
     if (event.target.classList.contains('touchable') || event.target.tagName === 'button' || (event.target.parentElement === document.body && !event.target.id)) {
@@ -41,6 +42,7 @@ document.body.addEventListener('mouseover', (event) => {
 });
 
 document.body.addEventListener('mouseout', (event) => {
+    console.log(event.target);
     // **UPDATED CHECK:** Check if the mouse left an element with class "touchable"
     if (event.target.classList.contains('touchable') || event.target.tagName === 'button' || (event.target.parentElement === document.body && !event.target.id)) {
         window.electronAPI.setIgnoreMouseEvents(true);

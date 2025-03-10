@@ -5,7 +5,6 @@ const fs = require('fs-extra');
 
 module.exports = {
   packagerConfig: {
-    // prune: false,
     asar: true,
     // extraResource: ["extensions"],
     afterCopy: [
@@ -25,23 +24,7 @@ module.exports = {
           .then(() => callback())
           .catch(callback);
       }
-      //   (buildPath, electronVersion, platform, arch, callback) => {
-      //   console.log('Build path: ', buildPath);
-      //   fs.readdir(buildPath, (err, files) => {
-      //     if (err) {
-      //       console.error("Error reading directory:", err);
-      //       return;
-      //     }
-      //     console.log("Files:", files);
-      //   });
-      //   callback();
-      // }
     ]
-    // extraResource: [path.join('.webpack', 'x64', 'main', 'extensions')],
-    // extraResource: ["node_modules/uiohook-napi", "node_modules/uiohook-napi/prebuilds"]
-    // asar: {
-    //   unpack: "main/native_modules/build/**"
-    // }
   },
   rebuildConfig: {},
   makers: [
@@ -83,6 +66,22 @@ module.exports = {
                 js: './main/preload.js',
               },
             },
+            {
+              html: './renderer/text_log.html',
+              js: './renderer/text_log.js',
+              name: 'text_log',
+              preload: {
+                js: './main/text_log_preload.js',
+              },
+            },
+            // {
+            //   html: './src/index.html',
+            //   js: './src/renderer.js',
+            //   name: 'text_log',
+            //   preload: {
+            //     js: './src/preload.js',
+            //   },
+            // },
             // {
             //   html: './src/index.html',
             //   js: './src/renderer.js',

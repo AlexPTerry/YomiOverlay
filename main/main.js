@@ -24,7 +24,9 @@ let timerRunning = true;
 let timerInterval;
 let mouseEventsSettable = true;
 
-let gameHandle = 199270; // <--- Needs to be set non-manually!
+// let gameHandle = 199270; // <--- Needs to be set non-manually!
+let gameHandle = 0;
+let partialTitle = 'midori';
 let overlayHandle;
 let spaceCounter = 0;
 
@@ -34,6 +36,53 @@ const GetLastError = kernel32.func('__stdcall', 'GetLastError', 'uint', []);
 const PostMessageW = user32.func('__stdcall', 'PostMessageW', 'bool', ['void *', 'uint', 'uintptr_t', 'intptr_t']);
 const GetForegroundWindow = user32.func("GetForegroundWindow", "int", []);
 const GetWindowTextW = user32.func("GetWindowTextW", "int", ["void *", "char *", "int"]);
+
+const GetClassName = user32.func('__stdcall', 'GetClassNameA', 'int', ['void *', 'char *', 'int']);
+const IsWindowVisible = user32.func('__stdcall', 'IsWindowVisible', 'bool', ['void *']);
+
+// Define the callback prototype correctly
+const EnumWindowsProc = koffi.proto('__stdcall', 'EnumWindowsProc', 'bool', ['int', 'intptr_t']);
+const EnumWindows = user32.func('__stdcall', 'EnumWindows', 'bool', [koffi.pointer(EnumWindowsProc), 'intptr_t']);
+
+// Array to store the window list
+let windows = [];
+
+// Register the callback function
+const enumWindowsCallback = koffi.register(
+    (wHandle, lParam) => {
+        let titleBuffer = Buffer.alloc(256);
+        let classBuffer = Buffer.alloc(256);
+
+        GetWindowTextW(wHandle, titleBuffer, 256);
+        GetClassName(wHandle, classBuffer, 256);
+
+        let title = titleBuffer.toString('ucs2').replace(/\0/g, ''); // Remove null chars
+        let className = classBuffer.toString('ucs2').replace(/\0/g, '');
+        
+        let titleUTF8 = titleBuffer.toString('utf8').replace(/\0/g, ''); // Remove null chars
+        let classNameUTF8 = classBuffer.toString('utf8').replace(/\0/g, '');
+
+        if (IsWindowVisible(wHandle) && title.length > 0) {
+            windows.push(`${title} | ${className} | ${wHandle}`); // Filter out e.g. file xplorer on class name
+            windows.push(`${titleUTF8} | ${classNameUTF8} | ${wHandle}`); 
+            if (className.includes(partialTitle) || classNameUTF8.includes(partialTitle)) {
+                gameHandle = wHandle;
+                return false;
+            }
+        }
+
+        return true; // Continue enumeration
+    },
+    koffi.pointer(EnumWindowsProc)
+);
+
+// Call EnumWindows
+windows = []; // Reset list
+EnumWindows(enumWindowsCallback, 0);
+
+// Print results
+console.log(windows);
+koffi.unregister(enumWindowsCallback);
 
 const WM_KEYDOWN = 0x0100;
 const WM_KEYUP = 0x0101;
@@ -45,14 +94,14 @@ function showHideOverlay() {
   const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
   console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
   
-//   if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-//       console.log('Showing window');
-//       overlayWindow.show();
-//   } else {
-//       console.log('Hiding window');
-//       overlayWindow.hide();
-//   }
-  overlayWindow.show();
+  if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+      console.log('Showing window');
+      overlayWindow.show();
+  } else {
+      console.log('Hiding window');
+      overlayWindow.hide();
+  }
+  // overlayWindow.show();
 }
 
 uIOhook.on('keydown', (e) => {
@@ -129,12 +178,12 @@ async function createOverlayWindow(settings) {
 
   overlayWindow = new BrowserWindow({
       width, height,
-    //   frame: false,
-    //   transparent: true,
+      frame: false,
+      transparent: true,
       resizable: true,
       // focusable: false,
-    //   show: false,
-    //   type: 'toolbar',
+      show: false,
+      type: 'toolbar',
       webPreferences: {
           preload: OVERLAY_PRELOAD_WEBPACK_ENTRY,
           nodeIntegration: false,
@@ -144,31 +193,31 @@ async function createOverlayWindow(settings) {
       },
   });
 
-//   overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-//   overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
-//   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
+  overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
-//   ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
-//       if (mouseEventsSettable) {
-//           console.log('Mouse events are settable: ', mouseEventsSettable);
-//           overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
-//           console.log(`Now ignoring mouse events: ${ignore}`);
-//       }
-//   });
+  ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+      // if (mouseEventsSettable) {
+          console.log('Mouse events are settable: ', mouseEventsSettable);
+          overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
+          console.log(`Now ignoring mouse events: ${ignore}`);
+      // }
+  });
 
-  // overlayWindow.webContents.on('before-input-event', async (event, input) => {
-  //     console.log('caught event');
-  //     if (input.key === ' ') {
-  //         event.preventDefault();
-  //         pressSpace();
-  //     }
-  // });
+  overlayWindow.webContents.on('before-input-event', async (event, input) => {
+      console.log('caught event');
+      if (input.key === ' ') {
+          event.preventDefault();
+          pressSpace();
+      }
+  });
 
 //   overlayWindow.webContents.openDevTools();
   overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
   overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
   overlayWindow.webContents.once("did-finish-load", showHideOverlay);
-  overlayWindow.webContents.openDevTools();
+  // overlayWindow.webContents.openDevTools();
 
   return overlayWindow;
 }
@@ -233,6 +282,36 @@ function registerIpcHandlers() {
   ipcMain.on('request-char-count', (event) => event.reply('update-char-count', charCount));
 }
 
+async function openTextLog() {
+  const { width, height } = screen.getPrimaryDisplay().size;
+
+  textLogWindow = new BrowserWindow({
+      width: width / 2,
+      height: height / 2,
+      resizable: true,
+      show: false,
+      parent: overlayWindow,
+      webPreferences: {
+          preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+          nodeIntegration: false,
+          contextIsolation: true,
+          nativeWindowOpen: true,
+      },
+  });
+
+  textLogWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  textLogWindow.setAlwaysOnTop(true, "screen-saver", 2);
+  textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
+  // textLogWindow.openDevTools();
+
+  textLogWindow.once('ready-to-show', () => textLogWindow.show());
+  textLogWindow.on('closed', () => textLogWindow = null);
+}
+
+async function addTextLog(text) {
+  charCount += [...text].length;
+  store.set('textLog', [...store.get('textLog', []), text]);
+}
 
 let clickThrough = false;
 function toggleMouseEventsSettable() {
@@ -296,6 +375,16 @@ async function registerGlobalShortcuts() {
         console.log('Alt+C was pressed');
         toggleMouseEventsSettable();
     });
+
+    globalShortcut.register('Alt+G', () => {
+        console.log('Alt+G was pressed');
+        overlayWindow.setIgnoreMouseEvents(false, { forward: true });
+    });
+    
+    globalShortcut.register('Alt+H', () => {
+      console.log('Alt+H was pressed');
+      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+  });
 
     globalShortcut.register('Alt+L', () => {
         console.log('Alt+L was pressed');
