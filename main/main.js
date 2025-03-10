@@ -26,7 +26,7 @@ let mouseEventsSettable = true;
 
 // let gameHandle = 199270; // <--- Needs to be set non-manually!
 let gameHandle = 0;
-let partialTitle = 'midori';
+let partialTitle = 'midori'; // <--- Still needs to be set non-maually but less egregious now
 let overlayHandle;
 let spaceCounter = 0;
 
@@ -350,9 +350,19 @@ async function registerGlobalShortcuts() {
         overlayWindow.webContents.send('export-settings');
     });
     
+    let textLogShow = false;
     globalShortcut.register('Alt+T', () => {
         console.log('Alt+T was pressed');
-        openTextLog();
+        if (!textLogWindow) {
+          openTextLog();
+          textLogShow = true;
+        } else if (textLogShow) {
+          textLogWindow.hide();
+          textLogShow = false;
+        } else {
+          textLogWindow.show();
+          textLogShow = true;
+        }
     });
     
     globalShortcut.register('Alt+W', () => {
