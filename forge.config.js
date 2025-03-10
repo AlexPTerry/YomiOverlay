@@ -1,10 +1,43 @@
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const path = require('path');
+const fs = require('fs-extra');
 
 module.exports = {
   packagerConfig: {
     // prune: false,
     asar: true,
+    // extraResource: ["extensions"],
+    afterCopy: [
+      // Weird workaround because I can't figure out how else to get extensions to be placed in the root directory
+      (buildPath, electronVersion, platform, arch, callback) => {
+        const sourceFolder = path.join(buildPath, ".webpack", "main", "extensions");
+        const targetFolder = path.join(buildPath, "..", "..", "extensions");
+        console.log('Target folder: ', targetFolder);
+        fs.readdir(path.join(buildPath, ".webpack"), (err, files) => {
+          if (err) {
+            console.error("Error reading directory:", err);
+            return;
+          }
+          console.log("Files:", files);
+        });
+        fs.move(sourceFolder, targetFolder, { overwrite: true })
+          .then(() => callback())
+          .catch(callback);
+      }
+      //   (buildPath, electronVersion, platform, arch, callback) => {
+      //   console.log('Build path: ', buildPath);
+      //   fs.readdir(buildPath, (err, files) => {
+      //     if (err) {
+      //       console.error("Error reading directory:", err);
+      //       return;
+      //     }
+      //     console.log("Files:", files);
+      //   });
+      //   callback();
+      // }
+    ]
+    // extraResource: [path.join('.webpack', 'x64', 'main', 'extensions')],
     // extraResource: ["node_modules/uiohook-napi", "node_modules/uiohook-napi/prebuilds"]
     // asar: {
     //   unpack: "main/native_modules/build/**"
@@ -57,12 +90,20 @@ module.exports = {
             //   preload: {
             //     js: './src/preload.js',
             //   },
+            // },
+            // {
+            //   html: './src/index.html',
+            //   js: './src/renderer.js',
+            //   name: 'main_window',
+            //   preload: {
+            //     js: './src/preload.js',
+            //   },
             // }
           ],
         },
       },
     },
-    {
+    { // This is needed to help forge package up uiohook (but not koffi or nutjs), for some reason
       name: '@timfish/forge-externals-plugin',
       config: {
         "externals": ["uiohook-napi"],

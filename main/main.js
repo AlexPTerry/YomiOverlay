@@ -4,6 +4,7 @@ const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
 const koffi = require('koffi');
 const { uIOhook, UiohookKey } = require('uiohook-napi');
+const fs = require("fs");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -59,6 +60,7 @@ uIOhook.on('keydown', (e) => {
       console.log('Hello!');
   }
 
+  // This might be causing crashes somehow?
   if (e.keycode === UiohookKey.Enter) {
       showHideOverlay();
 
@@ -162,11 +164,11 @@ async function createOverlayWindow(settings) {
   //     }
   // });
 
-  overlayWindow.webContents.openDevTools();
+//   overlayWindow.webContents.openDevTools();
   overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
   overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
   overlayWindow.webContents.once("did-finish-load", showHideOverlay);
-  // overlayWindow.webContents.openDevTools();
+  overlayWindow.webContents.openDevTools();
 
   return overlayWindow;
 }
@@ -175,7 +177,8 @@ async function createOverlayWindow(settings) {
 async function setupChromeExtensions() {
   return new ElectronChromeExtensions({
       license: "GPL-3.0",
-      modulePath: path.join(__dirname, 'node_modules', 'electron-chrome-extensions'),
+      // Seems to work if not included - otherwise needs to be pointed elsewhere to successfully find the preload?
+    //   modulePath: path.join(__dirname, 'node_modules', 'electron-chrome-extensions'), 
       createTab(details) {
           const newWin = new BrowserWindow({ alwaysOnTop: true });
           newWin.setAlwaysOnTop(true, "screen-saver");
@@ -307,6 +310,7 @@ async function registerGlobalShortcuts() {
 (async function main() {
   await app.whenReady();
 
+//   let settings = await loadSettings();
   let [settings, extensions] = await Promise.all([
       loadSettings(),
       setupChromeExtensions()
@@ -324,8 +328,10 @@ async function registerGlobalShortcuts() {
 //           { allowFileAccess: true }
 //       ),
 //   ]);
+
   await session.defaultSession.loadExtension(
-    path.join(__dirname, "extensions", "yomitan-chrome"),
+    // path.resolve(__dirname, "extensions", "yomitan-chrome"), // No clue why this doesn't work - fs shows directory is there (when not moved by the workaround)
+    path.resolve('.', "extensions", "yomitan-chrome"),
     { allowFileAccess: true }
   );
 
