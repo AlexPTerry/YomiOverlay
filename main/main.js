@@ -1,18 +1,18 @@
 const { app, session, ipcMain, BrowserWindow, screen, globalShortcut } = require("electron");
 const { ElectronChromeExtensions } = require("electron-chrome-extensions");
-// const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
+const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
 const koffi = require('koffi');
-// const { uIOhook, UiohookKey } = require('uiohook-napi');
+const { uIOhook, UiohookKey } = require('uiohook-napi');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+// function sleep(ms) {
+//   return new Promise(resolve => setTimeout(resolve, ms));
+// }
 
 
 let textLogWindow, overlayWindow, store;
@@ -44,54 +44,55 @@ function showHideOverlay() {
   const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
   console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
   
-  if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-      console.log('Showing window');
-      overlayWindow.show();
-  } else {
-      console.log('Hiding window');
-      overlayWindow.hide();
-  }
+//   if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+//       console.log('Showing window');
+//       overlayWindow.show();
+//   } else {
+//       console.log('Hiding window');
+//       overlayWindow.hide();
+//   }
+  overlayWindow.show();
 }
 
-// uIOhook.on('keydown', (e) => {
-//   if (e.keycode === UiohookKey.Q) {
-//       console.log('Hello!');
-//   }
+uIOhook.on('keydown', (e) => {
+  if (e.keycode === UiohookKey.Q) {
+      console.log('Hello!');
+  }
 
-//   if (e.keycode === UiohookKey.Enter) {
-//       showHideOverlay();
+  if (e.keycode === UiohookKey.Enter) {
+      showHideOverlay();
 
-//   }
+  }
 
-//   if (e.keycode === UiohookKey.Space) {
-//       // Should check here that either the overlay, target program (+maybe text log) are in focus
-//       spaceCounter += 1; // (bug checking)
-//       console.log(spaceCounter);
+  if (e.keycode === UiohookKey.Space) {
+      // Should check here that either the overlay, target program (+maybe text log) are in focus
+      spaceCounter += 1; // (bug checking)
+      console.log(spaceCounter);
 
-//       const foregroundHandle = GetForegroundWindow();
-//       if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-//           pressSpace();
-//       }
-//   }
-// })
+      const foregroundHandle = GetForegroundWindow();
+      if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+          pressSpace();
+      }
+  }
+})
 
-// uIOhook.on('keyup', (e) => {
-//   if (e.keycode === UiohookKey.Alt) {
-//       (async () => {
-//           await sleep(20);
-//           showHideOverlay();
-//       })();
-//   }
-// })
+uIOhook.on('keyup', (e) => {
+  if (e.keycode === UiohookKey.Alt) {
+      (async () => {
+          await sleep(20);
+          showHideOverlay();
+      })();
+  }
+})
 
-// uIOhook.on('mouseup', (e) => {
-//   (async () => {
-//       await sleep(20);
-//       showHideOverlay();
-//   })();
-// })
+uIOhook.on('mouseup', (e) => {
+  (async () => {
+      await sleep(20);
+      showHideOverlay();
+  })();
+})
 
-// uIOhook.start()
+uIOhook.start()
 
 
 async function loadSettings() {
@@ -115,6 +116,7 @@ async function loadSettings() {
 
   store.set('default', defaultSettings);
   if (!store.get('activeProfile')) store.set('activeProfile', 'default');
+  if (!store.get('textLog')) store.set('textLog', []);
 
   return store.get(store.get('activeProfile'));
 }
@@ -125,12 +127,12 @@ async function createOverlayWindow(settings) {
 
   overlayWindow = new BrowserWindow({
       width, height,
-      frame: false,
-      transparent: true,
+    //   frame: false,
+    //   transparent: true,
       resizable: true,
       // focusable: false,
-      show: false,
-      type: 'toolbar',
+    //   show: false,
+    //   type: 'toolbar',
       webPreferences: {
           preload: OVERLAY_PRELOAD_WEBPACK_ENTRY,
           nodeIntegration: false,
@@ -140,17 +142,17 @@ async function createOverlayWindow(settings) {
       },
   });
 
-  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
-  overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+//   overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+//   overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
+//   overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
-  ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
-      if (mouseEventsSettable) {
-          console.log('Mouse events are settable: ', mouseEventsSettable);
-          overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
-          console.log(`Now ignoring mouse events: ${ignore}`);
-      }
-  });
+//   ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+//       if (mouseEventsSettable) {
+//           console.log('Mouse events are settable: ', mouseEventsSettable);
+//           overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
+//           console.log(`Now ignoring mouse events: ${ignore}`);
+//       }
+//   });
 
   // overlayWindow.webContents.on('before-input-event', async (event, input) => {
   //     console.log('caught event');
@@ -160,6 +162,7 @@ async function createOverlayWindow(settings) {
   //     }
   // });
 
+  overlayWindow.webContents.openDevTools();
   overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
   overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
   overlayWindow.webContents.once("did-finish-load", showHideOverlay);
@@ -253,30 +256,85 @@ async function pressSpace(params) {
     toggleMouseEventsSettable();
 }
 
+
+async function registerGlobalShortcuts() {
+    globalShortcut.register('Alt+O', () => {
+        console.log('Alt+O was pressed');
+        overlayWindow.webContents.send('toggle-styles');
+    });
+    
+    globalShortcut.register('Alt+I', () => {
+        console.log('Alt+I was pressed');
+        overlayWindow.webContents.send('export-settings');
+    });
+    
+    globalShortcut.register('Alt+T', () => {
+        console.log('Alt+T was pressed');
+        openTextLog();
+    });
+    
+    globalShortcut.register('Alt+W', () => {
+        console.log('Alt+W was pressed');
+        app.quit(); 
+    });
+    
+    let overlayShow = true;
+    globalShortcut.register('Alt+S', () => {
+        console.log('Alt+S was pressed');
+        if (overlayShow) {
+            overlayWindow.hide();
+        } else {
+            overlayWindow.show();
+        }
+        overlayShow = !overlayShow;
+    });
+
+    globalShortcut.register('Alt+C', () => {
+        console.log('Alt+C was pressed');
+        toggleMouseEventsSettable();
+    });
+
+    globalShortcut.register('Alt+L', () => {
+        console.log('Alt+L was pressed');
+        // PostMessageW(135318, WM_KEYDOWN, VK_SPACE, 0);
+        // PostMessageW(135318, WM_KEYUP, VK_SPACE, 0);
+        // console.log("Success pressing space: ", GetLastError());
+        pressSpace();
+    });
+
+}
+
 (async function main() {
   await app.whenReady();
-
 
   let [settings, extensions] = await Promise.all([
       loadSettings(),
       setupChromeExtensions()
   ]);
 
-  await Promise.all([
-      session.defaultSession.loadExtension(
-          path.join(__dirname, "extensions", "yomitan-chrome"),
-          { allowFileAccess: true }
-      ),
-      (async () => {
-          overlayWindow = await createOverlayWindow(settings);
-          extensions.addTab(overlayWindow.webContents, overlayWindow);
-      })()
-  ]);
+  // Seems potentially buggy inside electron forge (breaks when I reverse the order in Promise.all())
+  // Look here if code breaks!
+//   await Promise.all([
+//     (async () => {
+//         overlayWindow = await createOverlayWindow(settings);
+//         extensions.addTab(overlayWindow.webContents, overlayWindow);
+//     })(),
+//       session.defaultSession.loadExtension(
+//           path.join(__dirname, "extensions", "yomitan-chrome"),
+//           { allowFileAccess: true }
+//       ),
+//   ]);
+  await session.defaultSession.loadExtension(
+    path.join(__dirname, "extensions", "yomitan-chrome"),
+    { allowFileAccess: true }
+  );
+
+  overlayWindow = await createOverlayWindow(settings);
+  extensions.addTab(overlayWindow.webContents, overlayWindow);
 
   registerIpcHandlers();
   registerGlobalShortcuts();
   setupTimer();
-
 
 })();
 

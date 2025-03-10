@@ -9,7 +9,7 @@ const browserActionList = document.createElement('browser-action-list');
 browserActionList.classList.add('touchable'); // Element hidden by shadow root, does nothing
 browserActionList.classList.add("hideable");
 
-settings = JSON.parse(JSON.stringify(initialSettings));
+let settings = JSON.parse(JSON.stringify(initialSettings));
 settings.textBox.height = settings.textBox.lines * 16 * settings.lineHeight;
 
 document.body.innerHTML = '';  // Clear the body
