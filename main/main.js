@@ -5,6 +5,9 @@ const path = require("path");
 const koffi = require('koffi');
 const { uIOhook, UiohookKey } = require('uiohook-napi');
 
+const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
+const { GetLastError, PostMessageW, GetForegroundWindow, GetWindowTextW, GetClassName, IsWindowVisible, findWindowHandle, sendWindowSpace} = require("./modules/window-utils");
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
     app.quit();
@@ -15,8 +18,7 @@ if (require('electron-squirrel-startup')) {
 //   return new Promise(resolve => setTimeout(resolve, ms));
 // }
 
-
-let textLogWindow, overlayWindow, store;
+let textLogWindow, overlayWindow;
 let charCount = 0;
 let startTime = Date.now();
 let elapsedTime = 0;
@@ -24,69 +26,13 @@ let timerRunning = true;
 let timerInterval;
 let mouseEventsSettable = true;
 
-// let gameHandle = 199270; // <--- Needs to be set non-manually!
 let gameHandle = 0;
 let partialTitle = 'midori'; // <--- Still needs to be set non-maually but less egregious now
 let overlayHandle;
 let spaceCounter = 0;
 
-const user32 = koffi.load('user32.dll');
-const kernel32 = koffi.load('kernel32.dll');
-const GetLastError = kernel32.func('__stdcall', 'GetLastError', 'uint', []);
-const PostMessageW = user32.func('__stdcall', 'PostMessageW', 'bool', ['void *', 'uint', 'uintptr_t', 'intptr_t']);
-const GetForegroundWindow = user32.func("GetForegroundWindow", "int", []);
-const GetWindowTextW = user32.func("GetWindowTextW", "int", ["void *", "char *", "int"]);
+gameHandle = findWindowHandle(partialTitle);
 
-const GetClassName = user32.func('__stdcall', 'GetClassNameA', 'int', ['void *', 'char *', 'int']);
-const IsWindowVisible = user32.func('__stdcall', 'IsWindowVisible', 'bool', ['void *']);
-
-// Define the callback prototype correctly
-const EnumWindowsProc = koffi.proto('__stdcall', 'EnumWindowsProc', 'bool', ['int', 'intptr_t']);
-const EnumWindows = user32.func('__stdcall', 'EnumWindows', 'bool', [koffi.pointer(EnumWindowsProc), 'intptr_t']);
-
-// Array to store the window list
-let windows = [];
-
-// Register the callback function
-const enumWindowsCallback = koffi.register(
-    (wHandle, lParam) => {
-        let titleBuffer = Buffer.alloc(256);
-        let classBuffer = Buffer.alloc(256);
-
-        GetWindowTextW(wHandle, titleBuffer, 256);
-        GetClassName(wHandle, classBuffer, 256);
-
-        let title = titleBuffer.toString('ucs2').replace(/\0/g, ''); // Remove null chars
-        let className = classBuffer.toString('ucs2').replace(/\0/g, '');
-        
-        let titleUTF8 = titleBuffer.toString('utf8').replace(/\0/g, ''); // Remove null chars
-        let classNameUTF8 = classBuffer.toString('utf8').replace(/\0/g, '');
-
-        if (IsWindowVisible(wHandle) && title.length > 0) {
-            windows.push(`${title} | ${className} | ${wHandle}`); // Filter out e.g. file xplorer on class name
-            windows.push(`${titleUTF8} | ${classNameUTF8} | ${wHandle}`); 
-            if (className.includes(partialTitle) || classNameUTF8.includes(partialTitle)) {
-                gameHandle = wHandle;
-                return false;
-            }
-        }
-
-        return true; // Continue enumeration
-    },
-    koffi.pointer(EnumWindowsProc)
-);
-
-// Call EnumWindows
-windows = []; // Reset list
-EnumWindows(enumWindowsCallback, 0);
-
-// Print results
-console.log(windows);
-koffi.unregister(enumWindowsCallback);
-
-const WM_KEYDOWN = 0x0100;
-const WM_KEYUP = 0x0101;
-const VK_SPACE = 0x20;
 
 function showHideOverlay() {
     const foregroundHandle = GetForegroundWindow();
@@ -145,33 +91,6 @@ uIOhook.on('mouseup', (e) => {
 })
 
 uIOhook.start()
-
-
-async function loadSettings() {
-    let Store = (await import("electron-store")).default;
-    store = new Store();
-
-    const { width, height } = screen.getPrimaryDisplay().size;
-
-    let defaultSettings = {
-        profile: 'default',
-        state: 1,
-        fontSize: 1.5,
-        lineHeight: 2.1,
-        textBox: {
-            top: height * 0.7,
-            left: width * 0.15,
-            width: width * 0.7,
-            lines: 3,
-        }
-    };
-
-    store.set('default', defaultSettings);
-    if (!store.get('activeProfile')) store.set('activeProfile', 'default');
-    if (!store.get('textLog')) store.set('textLog', []);
-
-    return store.get(store.get('activeProfile'));
-}
 
 
 async function createOverlayWindow(settings) {
@@ -276,8 +195,8 @@ function setupTimer() {
 }
 
 function registerIpcHandlers() {
-    ipcMain.handle("get-setting", (event, key) => store.get(key));
-    ipcMain.handle("set-setting", (event, key, value) => store.set(key, value));
+    ipcMain.handle("get-setting", (event, key) => getStore(key));
+    ipcMain.handle("set-setting", (event, key, value) => setStore(key, value));
     ipcMain.handle("open-text-log", () => openTextLog());
     ipcMain.handle("add-text-log", (event, text) => addTextLog(text));
     ipcMain.on('request-char-count', (event) => event.reply('update-char-count', charCount));
@@ -310,8 +229,8 @@ async function openTextLog() {
 }
 
 async function addTextLog(text) {
-  charCount += [...text].length;
-  store.set('textLog', [...store.get('textLog', []), text]);
+    charCount += [...text].length;
+    setStore('textLog', [...getStore('textLog', []), text]);
 }
 
 let clickThrough = false;
@@ -328,12 +247,10 @@ function toggleMouseEventsSettable() {
     clickThrough = !clickThrough;
 }
 
-async function pressSpace(params) {
+async function pressSpace() {
     toggleMouseEventsSettable();
     await sleep(50);
-    
-    PostMessageW(gameHandle, WM_KEYDOWN, VK_SPACE, 0);
-    PostMessageW(gameHandle, WM_KEYUP, VK_SPACE, 0);
+    sendWindowSpace(gameHandle);
     await sleep(50); // Have to wait slightly otherwise mouse events kick in before space is propagated
 
     toggleMouseEventsSettable();
@@ -355,14 +272,14 @@ async function registerGlobalShortcuts() {
     globalShortcut.register('Alt+T', () => {
         console.log('Alt+T was pressed');
         if (!textLogWindow) {
-          openTextLog();
-          textLogShow = true;
+            openTextLog();
+            textLogShow = true;
         } else if (textLogShow) {
-          textLogWindow.hide();
-          textLogShow = false;
+            textLogWindow.hide();
+            textLogShow = false;
         } else {
-          textLogWindow.show();
-          textLogShow = true;
+            textLogWindow.show();
+            textLogShow = true;
         }
     });
     
@@ -452,6 +369,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
