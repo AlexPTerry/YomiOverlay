@@ -213,7 +213,7 @@ async function createOverlayWindow(settings) {
       }
   });
 
-//   overlayWindow.webContents.openDevTools();
+  // overlayWindow.webContents.openDevTools();
   overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
   overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
   overlayWindow.webContents.once("did-finish-load", showHideOverlay);

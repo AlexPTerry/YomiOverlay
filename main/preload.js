@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { injectBrowserAction } from 'electron-chrome-extensions/browser-action';
+import interact from "interactjs";
 
 injectBrowserAction();
 
@@ -17,6 +18,7 @@ try {
     // Handle error appropriately, maybe use default settings here if parsing fails
 }
 contextBridge.exposeInMainWorld('initialSettings', initialSettings);
+contextBridge.exposeInMainWorld("interact", interact);
 
 contextBridge.exposeInMainWorld('electronAPI', {
     setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),

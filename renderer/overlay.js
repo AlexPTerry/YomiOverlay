@@ -1,3 +1,4 @@
+import interact from 'interactjs';
 import './overlay.css';
 
 // Create structure: website container and surrounding transparent divs
@@ -161,92 +162,70 @@ socket.onclose = () => {
 
 
 
-// Dynamically inject InteractJS
-const interactScript = document.createElement('script');
-interactScript.src = "https://cdn.jsdelivr.net/npm/interactjs@latest";
-interactScript.onload = () => {
+interact('#text-wrapper').draggable({
+    listeners: {
+        move(event) {
+            if (settings.state!=1) { // Check if drag is enabled
+                return; // Exit the function if drag is disabled
+            }
+            settings.textBox.left += event.dx;
+            settings.textBox.top += event.dy;
+            document.body.style.setProperty("--text-box-left", `${settings.textBox.left}px`);
+            document.body.style.setProperty("--text-box-top", `${settings.textBox.top}px`);
+        }
+    }
+});
 
-    // let isDragEnabled = true; // Variable to track drag state, initially enabled
+interact('#text-wrapper').resizable({
+    edges: { top: true, bottom: true, right: true, left: true},
+    listeners: {
+        move(event) {
+            if (settings.state!=1) { // Check if drag is enabled
+                return; // Exit the function if drag is disabled
+            }
 
-    // // Function to toggle drag state
-    // function toggleDrag() {
-    //     isDragEnabled = !isDragEnabled;
-    //     console.log("Drag functionality toggled:", isDragEnabled ? "ON" : "OFF"); // Optional feedback
-    // }
+            if (event.edges.right) {
+                settings.textBox.width += event.dx;
+                document.body.style.setProperty("--text-box-width", `${settings.textBox.width}px`);
+            }
+            
+            if (event.edges.bottom) {
+                settings.textBox.height += event.dy;
+                document.body.style.setProperty("--text-box-height", `${settings.textBox.height}px`);
+            }
 
-    // // Add event listener for 'P' key to toggle drag
-    // document.addEventListener('keydown', function(event) {
-    //     if (event.key === 'p' || event.key === 'P') {
-    //         toggleDrag();
-    //     }
-    // });
-
-
-    interact('#text-wrapper').draggable({
-        listeners: {
-            move(event) {
-                if (settings.state!=1) { // Check if drag is enabled
-                    return; // Exit the function if drag is disabled
-                }
-                settings.textBox.left += event.dx;
-                settings.textBox.top += event.dy;
+            if (event.edges.left) {
+                settings.textBox.left += event.dx
+                settings.textBox.width -= event.dx;
                 document.body.style.setProperty("--text-box-left", `${settings.textBox.left}px`);
+                document.body.style.setProperty("--text-box-width", `${settings.textBox.width}px`);
+            }
+            
+            if (event.edges.top) {
+                settings.textBox.top += event.dy
+                settings.textBox.height -= event.dy;
                 document.body.style.setProperty("--text-box-top", `${settings.textBox.top}px`);
+                document.body.style.setProperty("--text-box-height", `${settings.textBox.height}px`);
             }
         }
-    });
+    },
+    modifiers: [
+        interact.modifiers.restrictSize({
+            min: { width: 50, height: 10 }
+        })
+    ]
+});
 
-    interact('#text-wrapper').resizable({
-        edges: { top: true, bottom: true, right: true, left: true},
-        listeners: {
-            move(event) {
-                if (settings.state!=1) { // Check if drag is enabled
-                    return; // Exit the function if drag is disabled
-                }
+interact('#font-size-adjuster').draggable({
+    onmove: fontSizeDragMoveListener, // Font size drag always enabled - adjust if needed
+    inertia: false,
+});
 
-                if (event.edges.right) {
-                    settings.textBox.width += event.dx;
-                    document.body.style.setProperty("--text-box-width", `${settings.textBox.width}px`);
-                }
-                
-                if (event.edges.bottom) {
-                    settings.textBox.height += event.dy;
-                    document.body.style.setProperty("--text-box-height", `${settings.textBox.height}px`);
-                }
+interact('#line-height-adjuster').draggable({
+    onmove: lineHeightDragMoveListener, // Font size drag always enabled - adjust if needed
+    inertia: false,
+});
 
-                if (event.edges.left) {
-                    settings.textBox.left += event.dx
-                    settings.textBox.width -= event.dx;
-                    document.body.style.setProperty("--text-box-left", `${settings.textBox.left}px`);
-                    document.body.style.setProperty("--text-box-width", `${settings.textBox.width}px`);
-                }
-                
-                if (event.edges.top) {
-                    settings.textBox.top += event.dy
-                    settings.textBox.height -= event.dy;
-                    document.body.style.setProperty("--text-box-top", `${settings.textBox.top}px`);
-                    document.body.style.setProperty("--text-box-height", `${settings.textBox.height}px`);
-                }
-            }
-        },
-        modifiers: [
-            interact.modifiers.restrictSize({
-                min: { width: 50, height: 10 }
-            })
-        ]
-    });
-
-    interact('#font-size-adjuster').draggable({
-        onmove: fontSizeDragMoveListener, // Font size drag always enabled - adjust if needed
-        inertia: false,
-    });
-
-    interact('#line-height-adjuster').draggable({
-        onmove: lineHeightDragMoveListener, // Font size drag always enabled - adjust if needed
-        inertia: false,
-    });
-
-};
 
 function fontSizeDragMoveListener(event) {
     const target = event.target;
@@ -269,7 +248,7 @@ function lineHeightDragMoveListener(event) {
     document.body.style.setProperty("--line-height", `${settings.lineHeight}rem`);
 }
 
-document.head.appendChild(interactScript);
+// document.head.appendChild(interactScript);
 
 function toggleStyles() {
 
