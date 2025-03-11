@@ -1,4 +1,4 @@
-import './text_log.css';
+import './text-log.css';
 
 document.body.innerHTML = ''; 
 

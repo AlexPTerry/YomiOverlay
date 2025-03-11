@@ -6,20 +6,13 @@ const fs = require('fs-extra');
 module.exports = {
   packagerConfig: {
     asar: true,
-    // extraResource: ["extensions"],
+    // extraResource: ["extensions"], // May be better practice to just put the extensions folder in the resources folder
     afterCopy: [
       // Weird workaround because I can't figure out how else to get extensions to be placed in the root directory
+      // Using a different hook (afterPackage?) along with extraResource might be less janky and avoid needing CopyWebpackPlugin
       (buildPath, electronVersion, platform, arch, callback) => {
         const sourceFolder = path.join(buildPath, ".webpack", "main", "extensions");
         const targetFolder = path.join(buildPath, "..", "..", "extensions");
-        console.log('Target folder: ', targetFolder);
-        fs.readdir(path.join(buildPath, ".webpack"), (err, files) => {
-          if (err) {
-            console.error("Error reading directory:", err);
-            return;
-          }
-          console.log("Files:", files);
-        });
         fs.move(sourceFolder, targetFolder, { overwrite: true })
           .then(() => callback())
           .catch(callback);
@@ -63,46 +56,22 @@ module.exports = {
               js: './renderer/overlay/overlay.js',
               name: 'overlay',
               preload: {
-                js: './renderer/overlay/overlay_preload.js',
+                js: './renderer/overlay/overlay-preload.js',
               },
             },
             {
-              html: './renderer/text_log/text_log.html',
-              js: './renderer/text_log/text_log.js',
+              html: './renderer/text_log/text-log.html',
+              js: './renderer/text_log/text-log.js',
               name: 'text_log',
               preload: {
-                js: './renderer/text_log/text_log_preload.js',
+                js: './renderer/text_log/text-log-preload.js',
               },
             },
-            // {
-            //   html: './src/index.html',
-            //   js: './src/renderer.js',
-            //   name: 'text_log',
-            //   preload: {
-            //     js: './src/preload.js',
-            //   },
-            // },
-            // {
-            //   html: './src/index.html',
-            //   js: './src/renderer.js',
-            //   name: 'overlay',
-            //   preload: {
-            //     js: './src/preload.js',
-            //   },
-            // },
-            // {
-            //   html: './src/index.html',
-            //   js: './src/renderer.js',
-            //   name: 'main_window',
-            //   preload: {
-            //     js: './src/preload.js',
-            //   },
-            // }
           ],
         },
       },
     },
-    { // This is needed to help forge package up uiohook (but not koffi or nutjs), for some reason
+    { // This is needed to help forge package up uiohook (but not koffi or nutjs for some reason)
       name: '@timfish/forge-externals-plugin',
       config: {
         "externals": ["uiohook-napi"],
