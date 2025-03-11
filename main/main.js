@@ -11,6 +11,7 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// Possibly use the below instead of nutjs sleep if I never use anything else from it!
 // function sleep(ms) {
 //   return new Promise(resolve => setTimeout(resolve, ms));
 // }
@@ -94,6 +95,7 @@ function showHideOverlay() {
   const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
   console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
   
+  // Should allow windows such as text log, settings etc. to show overlay
   if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
       console.log('Showing window');
       overlayWindow.show();

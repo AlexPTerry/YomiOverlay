@@ -22,5 +22,6 @@ export function setupWebSocket(electronAPI) {
     socket.onclose = () => {
         console.log('WebSocket connection closed');
     };
+    
     return socket; // Return socket if you need to manage it externally later
 }
