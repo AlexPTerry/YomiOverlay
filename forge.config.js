@@ -59,19 +59,19 @@ module.exports = {
           config: './webpack.renderer.config.js',
           entryPoints: [
             {
-              html: './renderer/overlay.html',
-              js: './renderer/overlay.js',
+              html: './renderer/overlay/overlay.html',
+              js: './renderer/overlay/overlay.js',
               name: 'overlay',
               preload: {
-                js: './main/preload.js',
+                js: './renderer/overlay/overlay_preload.js',
               },
             },
             {
-              html: './renderer/text_log.html',
-              js: './renderer/text_log.js',
+              html: './renderer/text_log/text_log.html',
+              js: './renderer/text_log/text_log.js',
               name: 'text_log',
               preload: {
-                js: './main/text_log_preload.js',
+                js: './renderer/text_log/text_log_preload.js',
               },
             },
             // {
