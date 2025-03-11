@@ -4,11 +4,10 @@ const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
 const koffi = require('koffi');
 const { uIOhook, UiohookKey } = require('uiohook-napi');
-const fs = require("fs");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
-  app.quit();
+    app.quit();
 }
 
 // Possibly use the below instead of nutjs sleep if I never use anything else from it!
@@ -90,214 +89,214 @@ const WM_KEYUP = 0x0101;
 const VK_SPACE = 0x20;
 
 function showHideOverlay() {
-  const foregroundHandle = GetForegroundWindow();
-  const buffer = Buffer.alloc(256); // Allocate space for title
-  const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
-  console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
-  
-  // Should allow windows such as text log, settings etc. to show overlay
-  if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-      console.log('Showing window');
-      overlayWindow.show();
-  } else {
-      console.log('Hiding window');
-      overlayWindow.hide();
-  }
-  // overlayWindow.show();
+    const foregroundHandle = GetForegroundWindow();
+    const buffer = Buffer.alloc(256); // Allocate space for title
+    const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
+    console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
+    
+    // Should allow windows such as text log, settings etc. to show overlay
+    if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+        console.log('Showing window');
+        overlayWindow.show();
+    } else {
+        console.log('Hiding window');
+        overlayWindow.hide();
+    }
+    // overlayWindow.show();
 }
 
 uIOhook.on('keydown', (e) => {
-  if (e.keycode === UiohookKey.Q) {
-      console.log('Hello!');
-  }
+    if (e.keycode === UiohookKey.Q) {
+        console.log('Hello!');
+    }
 
-  // This might be causing crashes somehow?
-  if (e.keycode === UiohookKey.Enter) {
-      showHideOverlay();
+    // This might be causing crashes somehow?
+    if (e.keycode === UiohookKey.Enter) {
+        showHideOverlay();
 
-  }
+    }
 
-  if (e.keycode === UiohookKey.Space) {
-      // Should check here that either the overlay, target program (+maybe text log) are in focus
-      spaceCounter += 1; // (bug checking)
-      console.log(spaceCounter);
+    if (e.keycode === UiohookKey.Space) {
+        // Should check here that either the overlay, target program (+maybe text log) are in focus
+        spaceCounter += 1; // (bug checking)
+        console.log(spaceCounter);
 
-      const foregroundHandle = GetForegroundWindow();
-      if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-          pressSpace();
-      }
-  }
+        const foregroundHandle = GetForegroundWindow();
+        if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+            pressSpace();
+        }
+    }
 })
 
 uIOhook.on('keyup', (e) => {
-  if (e.keycode === UiohookKey.Alt) {
-      (async () => {
-          await sleep(20);
-          showHideOverlay();
-      })();
-  }
+    if (e.keycode === UiohookKey.Alt) {
+        (async () => {
+            await sleep(20);
+            showHideOverlay();
+        })();
+    }
 })
 
 uIOhook.on('mouseup', (e) => {
-  (async () => {
-      await sleep(20);
-      showHideOverlay();
-  })();
+    (async () => {
+        await sleep(20);
+        showHideOverlay();
+    })();
 })
 
 uIOhook.start()
 
 
 async function loadSettings() {
-  let Store = (await import("electron-store")).default;
-  store = new Store();
+    let Store = (await import("electron-store")).default;
+    store = new Store();
 
-  const { width, height } = screen.getPrimaryDisplay().size;
+    const { width, height } = screen.getPrimaryDisplay().size;
 
-  let defaultSettings = {
-      profile: 'default',
-      state: 1,
-      fontSize: 1.5,
-      lineHeight: 2.1,
-      textBox: {
-          top: height * 0.7,
-          left: width * 0.15,
-          width: width * 0.7,
-          lines: 3,
-      }
-  };
+    let defaultSettings = {
+        profile: 'default',
+        state: 1,
+        fontSize: 1.5,
+        lineHeight: 2.1,
+        textBox: {
+            top: height * 0.7,
+            left: width * 0.15,
+            width: width * 0.7,
+            lines: 3,
+        }
+    };
 
-  store.set('default', defaultSettings);
-  if (!store.get('activeProfile')) store.set('activeProfile', 'default');
-  if (!store.get('textLog')) store.set('textLog', []);
+    store.set('default', defaultSettings);
+    if (!store.get('activeProfile')) store.set('activeProfile', 'default');
+    if (!store.get('textLog')) store.set('textLog', []);
 
-  return store.get(store.get('activeProfile'));
+    return store.get(store.get('activeProfile'));
 }
 
 
 async function createOverlayWindow(settings) {
-  const { width, height } = screen.getPrimaryDisplay().size;
+    const { width, height } = screen.getPrimaryDisplay().size;
 
-  overlayWindow = new BrowserWindow({
-      width, height,
-      frame: false,
-      transparent: true,
-      resizable: true,
-      // focusable: false,
-      show: false,
-      type: 'toolbar',
-      webPreferences: {
-          preload: OVERLAY_PRELOAD_WEBPACK_ENTRY,
-          nodeIntegration: false,
-          contextIsolation: true,
-          nativeWindowOpen: true,
-          additionalArguments: [JSON.stringify({ settings })]
-      },
-  });
+    overlayWindow = new BrowserWindow({
+        width, height,
+        frame: false,
+        transparent: true,
+        resizable: true,
+        // focusable: false,
+        show: false,
+        type: 'toolbar',
+        webPreferences: {
+            preload: OVERLAY_PRELOAD_WEBPACK_ENTRY,
+            nodeIntegration: false,
+            contextIsolation: true,
+            nativeWindowOpen: true,
+            additionalArguments: [JSON.stringify({ settings })]
+        },
+    });
 
-  overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
-  overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+    overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    overlayWindow.setAlwaysOnTop(true, "screen-saver", 2);
+    overlayWindow.setIgnoreMouseEvents(true, { forward: true });
 
-  ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
-      // if (mouseEventsSettable) {
-          console.log('Mouse events are settable: ', mouseEventsSettable);
-          overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
-          console.log(`Now ignoring mouse events: ${ignore}`);
-      // }
-  });
+    ipcMain.on('set-ignore-mouse-events', (event, ignore) => {
+        if (mouseEventsSettable) {
+            console.log('Mouse events are settable: ', mouseEventsSettable);
+            overlayWindow.setIgnoreMouseEvents(ignore, { forward: true });
+            console.log(`Now ignoring mouse events: ${ignore}`);
+        }
+    });
 
-  overlayWindow.webContents.on('before-input-event', async (event, input) => {
-      console.log('caught event');
-      if (input.key === ' ') {
-          event.preventDefault();
-          pressSpace();
-      }
-  });
+    overlayWindow.webContents.on('before-input-event', async (event, input) => {
+        console.log('caught event');
+        if (input.key === ' ') {
+            event.preventDefault();
+            pressSpace();
+        }
+    });
 
-  overlayWindow.webContents.openDevTools();
-  overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
-  overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
-  overlayWindow.webContents.once("did-finish-load", showHideOverlay);
-  // overlayWindow.webContents.openDevTools();
+    // overlayWindow.webContents.openDevTools();
+    overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
+    overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
+    overlayWindow.webContents.once("did-finish-load", showHideOverlay);
+    // overlayWindow.webContents.openDevTools();
 
-  return overlayWindow;
+    return overlayWindow;
 }
 
 
 async function setupChromeExtensions() {
-  return new ElectronChromeExtensions({
-      license: "GPL-3.0",
-      // Seems to work if not included - otherwise needs to be pointed elsewhere to successfully find the preload?
-    //   modulePath: path.join(__dirname, 'node_modules', 'electron-chrome-extensions'), 
-      createTab(details) {
-          const newWin = new BrowserWindow({ alwaysOnTop: true });
-          newWin.setAlwaysOnTop(true, "screen-saver");
-          if (details.url) newWin.webContents.loadURL(details.url);
-          return [newWin.webContents, newWin];
-      },
-      createWindow(details) {
-          const newWin = new BrowserWindow({ alwaysOnTop: true });
-          newWin.setAlwaysOnTop(true, "screen-saver");
-          if (details.url) newWin.webContents.loadURL(details.url);
-          return newWin;
-      }
-  });
+    return new ElectronChromeExtensions({
+        license: "GPL-3.0",
+        // Seems to work if not included - otherwise needs to be pointed elsewhere to successfully find the preload?
+        //   modulePath: path.join(__dirname, 'node_modules', 'electron-chrome-extensions'), 
+        createTab(details) {
+            const newWin = new BrowserWindow({ alwaysOnTop: true });
+            newWin.setAlwaysOnTop(true, "screen-saver");
+            if (details.url) newWin.webContents.loadURL(details.url);
+            return [newWin.webContents, newWin];
+        },
+        createWindow(details) {
+            const newWin = new BrowserWindow({ alwaysOnTop: true });
+            newWin.setAlwaysOnTop(true, "screen-saver");
+            if (details.url) newWin.webContents.loadURL(details.url);
+            return newWin;
+        }
+    });
 }
 
 function setupTimer() {
-  function startTimer() {
-      timerInterval = setInterval(() => {
-          elapsedTime = Date.now() - startTime;
-          if (textLogWindow) {
-              textLogWindow.webContents.send('update-timer', elapsedTime);
-          }
-      }, 1000);
-  }
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            elapsedTime = Date.now() - startTime;
+            if (textLogWindow) {
+                textLogWindow.webContents.send('update-timer', elapsedTime);
+            }
+        }, 1000);
+    }
 
-  ipcMain.on('toggle-timer', () => {
-      timerRunning = !timerRunning;
-      if (timerRunning) {
-          startTime = Date.now() - elapsedTime;
-          startTimer();
-      } else {
-          clearInterval(timerInterval);
-      }
-  });
+    ipcMain.on('toggle-timer', () => {
+        timerRunning = !timerRunning;
+        if (timerRunning) {
+            startTime = Date.now() - elapsedTime;
+            startTimer();
+        } else {
+            clearInterval(timerInterval);
+        }
+    });
 
-  ipcMain.on('reset-timer', () => {
-      elapsedTime = 0;
-      startTime = Date.now();
-      if (textLogWindow) {
-          textLogWindow.webContents.send('update-timer', elapsedTime);
-      }
-  });
+    ipcMain.on('reset-timer', () => {
+        elapsedTime = 0;
+        startTime = Date.now();
+        if (textLogWindow) {
+            textLogWindow.webContents.send('update-timer', elapsedTime);
+        }
+    });
 
-  startTimer();
+    startTimer();
 }
 
 function registerIpcHandlers() {
-  ipcMain.handle("get-setting", (event, key) => store.get(key));
-  ipcMain.handle("set-setting", (event, key, value) => store.set(key, value));
-  ipcMain.handle("open-text-log", () => openTextLog());
-  ipcMain.handle("add-text-log", (event, text) => addTextLog(text));
-  ipcMain.on('request-char-count', (event) => event.reply('update-char-count', charCount));
+    ipcMain.handle("get-setting", (event, key) => store.get(key));
+    ipcMain.handle("set-setting", (event, key, value) => store.set(key, value));
+    ipcMain.handle("open-text-log", () => openTextLog());
+    ipcMain.handle("add-text-log", (event, text) => addTextLog(text));
+    ipcMain.on('request-char-count', (event) => event.reply('update-char-count', charCount));
 }
 
 async function openTextLog() {
   const { width, height } = screen.getPrimaryDisplay().size;
 
   textLogWindow = new BrowserWindow({
-      width: width / 2,
-      height: height / 2,
-      resizable: true,
-      show: false,
-      parent: overlayWindow,
-      webPreferences: {
-          preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
-          nodeIntegration: false,
-          contextIsolation: true,
-          nativeWindowOpen: true,
+        width: width / 2,
+        height: height / 2,
+        resizable: true,
+        show: false,
+        parent: overlayWindow,
+        webPreferences: {
+            preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+            nodeIntegration: false,
+            contextIsolation: true,
+            nativeWindowOpen: true,
       },
   });
 

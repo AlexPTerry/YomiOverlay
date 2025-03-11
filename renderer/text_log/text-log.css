@@ -19,7 +19,6 @@ body {
     margin: 1.5% 0%;
 }
 
-
 .text-box {
     width: 80%;
     height: auto;
@@ -32,8 +31,26 @@ body {
     padding: 10px;  /* Add some padding to avoid text touching the edges */
 }
 
-
 .text-box p {
     margin: 0;  /* Remove default margin to prevent any unwanted spacing */
     color: white;
+}
+
+#controls-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 1.5% 0%;
+}
+
+#controls-wrapper p {
+    margin-top: 0;
+    margin-bottom: 0.1em;
+}
+
+#controls-wrapper button {
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
 }
