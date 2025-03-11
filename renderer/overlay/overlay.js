@@ -1,166 +1,33 @@
 import interact from 'interactjs';
+
 import './overlay.css';
 
-// Create structure: website container and surrounding transparent divs
-const websiteContainerWrapper = document.createElement('div');
-websiteContainerWrapper.id = 'website-container-wrapper';
+import { createOverlayElements, appendElementsToBody, updateCSSVariable, setInitialCSSVariables } from './dom-elements';
+import { setupMouseEvents } from './mouse-events';
+import { initialiseTextElement, updateTextContent, setTextState } from './text-handler';
+import { setupWebSocket } from './websocket-service';
 
-// const browserActionWrapper = document.createElement('div');
-const browserActionList = document.createElement('browser-action-list');
-browserActionList.classList.add('touchable'); // Element hidden by shadow root, does nothing
-browserActionList.classList.add("hideable");
 
 let settings = JSON.parse(JSON.stringify(initialSettings));
 settings.textBox.height = settings.textBox.lines * 16 * settings.lineHeight;
 
-document.body.innerHTML = '';  // Clear the body
-
-// Set CSS variables
-document.body.style.setProperty("--font-size", `${settings.fontSize}rem`);
-document.body.style.setProperty("--line-height", `${settings.lineHeight}rem`);
-document.body.style.setProperty("--text-box-height", `${settings.textBox.height}px`);
-document.body.style.setProperty("--text-box-top", `${settings.textBox.top}px`);
-document.body.style.setProperty("--text-box-left", `${settings.textBox.left}px`);
-document.body.style.setProperty("--text-box-width", `${settings.textBox.width}px`);
-
-document.body.appendChild(websiteContainerWrapper);
-
-console.log('window.electronAPI:', window.electronAPI);
+const { websiteContainerWrapper, textWrapper, browserActionList, fontSizeAdjuster, lineHeightAdjuster } = createOverlayElements();
+appendElementsToBody(websiteContainerWrapper);
+setInitialCSSVariables(settings);
+const textElement = initialiseTextElement(textWrapper, settings);
 
 
-let ignoreMouse = true;
-let selectionTimer = false;
+setupMouseEvents(window.electronAPI);
 
-document.body.addEventListener('mouseover', (event) => {
-    console.log(event.target);
-    
-    // Yomitan popup fulfils the last condition
-    if (event.target.classList.contains('touchable') || event.target.tagName === 'button' || (event.target.parentElement === document.body && !event.target.id)) {
-        window.electronAPI.setIgnoreMouseEvents(false);
-        console.log('not pass through');
-        ignoreMouse = false;
-    }
-});
-
-document.body.addEventListener('mouseout', (event) => {
-    console.log(event.target);
-    // **UPDATED CHECK:** Check if the mouse left an element with class "touchable"
-    if (event.target.classList.contains('touchable') || event.target.tagName === 'button' || (event.target.parentElement === document.body && !event.target.id)) {
-        window.electronAPI.setIgnoreMouseEvents(true);
-        console.log('pass through');
-        ignoreMouse = true;
-
-        if (window.getSelection) {
-            setTimeout(() => {
-                if (ignoreMouse) window.getSelection().removeAllRanges();
-            }, 60);
-        }
-    }
-});
-
-
-const textWrapper = document.createElement('div');
-textWrapper.id = 'text-wrapper';
-textWrapper.classList.add('touchable');
-textWrapper.classList.add('hideable');
-websiteContainerWrapper.appendChild(textWrapper); // Text box
-
-websiteContainerWrapper.appendChild(browserActionList); // Extension icons
-
-const fontSizeAdjuster = document.createElement('div');
-fontSizeAdjuster.id = 'font-size-adjuster';
-fontSizeAdjuster.classList.add('touchable');
-fontSizeAdjuster.classList.add('hideable');
-websiteContainerWrapper.appendChild(fontSizeAdjuster);
-
-const lineHeightAdjuster = document.createElement('div');
-lineHeightAdjuster.id = 'line-height-adjuster';
-lineHeightAdjuster.classList.add('touchable');
-lineHeightAdjuster.classList.add('hideable');
-websiteContainerWrapper.appendChild(lineHeightAdjuster);
-
-
-(async () => {
-    if (settings.state === 1) {
-        document.documentElement.style.setProperty('--visibility', 'visible');
-        document.documentElement.style.setProperty('--pointer-events', 'auto');
-    } else {
-        document.documentElement.style.setProperty('--visibility', 'hidden');
-        document.documentElement.style.setProperty('--pointer-events', 'none');
-    }
-})();
 
 (async () => {
     const textLogList = await window.electronAPI.getSetting('textLog');
-    const textElement = document.createElement('span');
-    textElement.textContent = textLogList[textLogList.length-1];
-    textElement.classList.add('touchable');
-    if (settings.state === 1) {
-        textElement.classList.add('state-1');
-    } else {
-        textElement.classList.add('state-2');
+    if (textLogList.length > 0) {
+        updateTextContent(textLogList[textLogList.length-1]);
     }
-    console.log(textLogList[textLogList.length])
-    textWrapper.appendChild(textElement);
 })();
 
-
-
-function setTextState(state) {
-    const textParagraphs = document.querySelectorAll('#text-wrapper span'); // Or '#text-wrapper p' if you use that
-    if (state === 1) {
-        textParagraphs.forEach(p => {
-            p.classList.add('state-1');
-            p.classList.remove('state-2');
-        });
-    } else {
-        textParagraphs.forEach(p => {
-            p.classList.add('state-2');
-            p.classList.remove('state-1');
-        });
-    }
-}
-
-
-// WebSocket connection to capture text data from the server
-const socket = new WebSocket('ws://localhost:9001'); 
-
-socket.onopen = () => {
-    console.log('WebSocket connection established');
-};
-
-socket.onmessage = (event) => {
-    console.log("Message received");
-    // Parse the received message and extract only the "sentence" part
-    const messageData = JSON.parse(event.data);
-    const sentence = messageData.sentence;  // Get the sentence
-
-    // Clear previous text
-    textWrapper.innerHTML = '';
-
-    // Create a new element for the sentence and append it
-    const textElement = document.createElement('span');
-    textElement.textContent = sentence;
-    textElement.classList.add('touchable');
-    if (settings.state === 1) {
-        textElement.classList.add('state-1');
-    } else {
-        textElement.classList.add('state-2');
-    }
-
-    textWrapper.appendChild(textElement);
-    window.electronAPI.addTextLog(sentence);
-};
-
-socket.onerror = (error) => {
-    console.log('WebSocket Error:', error);
-};
-
-socket.onclose = () => {
-    console.log('WebSocket connection closed');
-};
-
-
+setupWebSocket(electronAPI);
 
 interact('#text-wrapper').draggable({
     listeners: {
@@ -253,13 +120,13 @@ function lineHeightDragMoveListener(event) {
 function toggleStyles() {
 
     if (settings.state === 1) {
-        document.documentElement.style.setProperty('--visibility', 'hidden');
-        document.documentElement.style.setProperty('--pointer-events', 'none');
+        document.body.style.setProperty('--visibility', 'hidden');
+        document.body.style.setProperty('--pointer-events', 'none');
         settings.state = 2;
         console.log("Style State toggled to: State 2");
     } else {
-        document.documentElement.style.setProperty('--visibility', 'visible');
-        document.documentElement.style.setProperty('--pointer-events', 'auto');
+        document.body.style.setProperty('--visibility', 'visible');
+        document.body.style.setProperty('--pointer-events', 'auto');
         settings.state = 1;
         console.log("Style State toggled to: State 1");
     }
