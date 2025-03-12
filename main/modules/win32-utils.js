@@ -58,6 +58,6 @@ module.exports.findWindowHandle = function(partialTitle) {
 };
 
 module.exports.sendWindowSpace = async function(handle) {
-    PostMessageW(handle, WM_KEYDOWN, VK_SPACE, 0);
-    PostMessageW(handle, WM_KEYUP, VK_SPACE, 0);
+    module.exports.PostMessageW(handle, WM_KEYDOWN, VK_SPACE, 0);
+    module.exports.PostMessageW(handle, WM_KEYUP, VK_SPACE, 0);
 }

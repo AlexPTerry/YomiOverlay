@@ -17,6 +17,8 @@ try {
     console.error("Error parsing settings from additionalArguments:", error);
     // Handle error appropriately, maybe use default settings here if parsing fails
 }
+console.log(JSON.stringify(initialSettings));
+
 contextBridge.exposeInMainWorld('initialSettings', initialSettings);
 contextBridge.exposeInMainWorld("interact", interact);
 

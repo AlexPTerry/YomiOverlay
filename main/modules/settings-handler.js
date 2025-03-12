@@ -23,7 +23,7 @@ function setDefaultSettings() {
     if (!store.get('textLog')) store.set('textLog', []);
 }
 
-function getCurrentSettings() {
+module.exports.getCurrentSettings = function() {
     return store.get(store.get('activeProfile'));
 }
 
@@ -40,5 +40,5 @@ module.exports.loadSettings = async function() {
     store = new Store();
 
     setDefaultSettings();
-    return getCurrentSettings();
+    return module.exports.getCurrentSettings();
 }
