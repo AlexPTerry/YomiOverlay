@@ -1,13 +1,13 @@
 const { app, session, ipcMain, BrowserWindow, screen, globalShortcut } = require("electron");
 // const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
-const { uIOhook, UiohookKey } = require('uiohook-napi');
 
 const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
 const { GetLastError, PostMessageW, GetForegroundWindow, GetWindowTextW, GetClassName, IsWindowVisible, findWindowHandle, sendWindowSpace} = require("./modules/win32-utils");
 const { setupChromeExtensions, addExtensionTab } = require('./modules/chrome-extensions');
 const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable } = require('./modules/window-handler');
 const { sleep } = require('./modules/general-utils');
+const { initialiseUIOHook } = require('./modules/uihook-setup');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -20,55 +20,8 @@ let startTime = Date.now();
 let elapsedTime = 0;
 let timerRunning = true;
 let timerInterval;
-// let mouseEventsSettable = true;
 
-let gameHandle = 0;
 let partialTitle = 'midori'; // <--- Still needs to be set non-manually but less egregious now
-let overlayHandle;
-let spaceCounter = 0;
-
-
-
-uIOhook.on('keydown', (e) => {
-    if (e.keycode === UiohookKey.Q) {
-        console.log('Hello!');
-    }
-
-    // This might be causing crashes somehow?
-    if (e.keycode === UiohookKey.Enter) {
-        showHideOverlay();
-    }
-
-    if (e.keycode === UiohookKey.Space) {
-        // Should check here that either the overlay, target program (+maybe text log) are in focus
-        spaceCounter += 1; // (bug checking)
-        console.log(spaceCounter);
-
-        const foregroundHandle = GetForegroundWindow();
-        if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
-            pressSpace();
-            console.log('Pressed space');
-        }
-    }
-})
-
-uIOhook.on('keyup', (e) => {
-    if (e.keycode === UiohookKey.Alt) {
-        (async () => {
-            await sleep(20);
-            showHideOverlay();
-        })();
-    }
-})
-
-uIOhook.on('mouseup', (e) => {
-    (async () => {
-        await sleep(20);
-        showHideOverlay();
-    })();
-})
-
-uIOhook.start()
 
 
 function setupTimer() {
@@ -227,6 +180,7 @@ async function registerGlobalShortcuts() {
     
     addExtensionTab(overlayWindow.webContents, overlayWindow);
 
+    initialiseUIOHook();
     registerIpcHandlers();
     registerGlobalShortcuts();
     setupTimer();

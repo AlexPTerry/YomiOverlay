@@ -82,10 +82,22 @@ module.exports.toggleMouseEventsSettable = function() {
 
 module.exports.pressSpace = async function() {
     module.exports.toggleMouseEventsSettable();
-    await sleep(50);
+    await sleep(10);
     sendWindowSpace(gameHandle);
-    await sleep(50); // Have to wait slightly otherwise mouse events kick in before space is propagated
+    await sleep(20); // Have to wait slightly otherwise mouse events kick in before space is propagated
     module.exports.toggleMouseEventsSettable();
+}
+
+module.exports.getOverlayWindow = function() {
+    return overlayWindow;
+}
+
+module.exports.getOverlayHandle = function() {
+    return overlayHandle;
+}
+
+module.exports.getGameHandle = function() {
+    return gameHandle;
 }
 
 module.exports.initialiseWindows = async function(
