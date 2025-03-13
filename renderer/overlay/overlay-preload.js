@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setIgnoreMouseEvents: (ignore) => ipcRenderer.send('set-ignore-mouse-events', ignore),
     getSetting: (key) => ipcRenderer.invoke("get-setting", key),
     setSetting: (key, value) => ipcRenderer.invoke("set-setting", key, value),
-    openTextLog: () => ipcRenderer.invoke("open-text-log"),
+    // openTextLog: () => ipcRenderer.invoke("open-text-log"),
     addTextLog: (text) => ipcRenderer.invoke("add-text-log", text),
     toggleStyles: (callback) => ipcRenderer.on('toggle-styles', callback),
     exportSettings: (callback) => ipcRenderer.on('export-settings', callback)

@@ -1,3 +1,5 @@
+import { appendTextLogEntry } from "./text-log-handler";
+
 function formatTime(ms) {
     const totalSeconds = Math.floor(ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
@@ -24,7 +26,12 @@ function setupUpdateListeners(electronAPI) {
     });
     
     electronAPI.onUpdateCharCount((count) => {
+        console.log('char count: ', count);
         document.getElementById('char-count').innerText = count;
+    });
+    
+    electronAPI.onUpdateTextLog((text) => {
+        appendTextLogEntry(text);
     });
 }
 
@@ -34,4 +41,5 @@ export function initialiseControls(electronAPI) {
 
     // Request initial character count when settings opens
     electronAPI.requestCharCount();
+    console.log('got here');
 }

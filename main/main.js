@@ -5,7 +5,7 @@ const path = require("path");
 const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
 const { GetLastError, PostMessageW, GetForegroundWindow, GetWindowTextW, GetClassName, IsWindowVisible, findWindowHandle, sendWindowSpace} = require("./modules/win32-utils");
 const { setupChromeExtensions, addExtensionTab } = require('./modules/chrome-extensions');
-const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable } = require('./modules/window-handler');
+const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable, showHideTextLog, addTextLog, getTextLogWindow, getCharCount, resetCharCount } = require('./modules/window-handler');
 const { sleep } = require('./modules/general-utils');
 const { initialiseUIOHook } = require('./modules/uihook-setup');
 
@@ -14,7 +14,7 @@ if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
-let textLogWindow, overlayWindow;
+let overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle;
 let charCount = 0;
 let startTime = Date.now();
 let elapsedTime = 0;
@@ -28,6 +28,8 @@ function setupTimer() {
     function startTimer() {
         timerInterval = setInterval(() => {
             elapsedTime = Date.now() - startTime;
+            // console.log(textLogWindow);
+            let textLogWindow = getTextLogWindow();
             if (textLogWindow) {
                 textLogWindow.webContents.send('update-timer', elapsedTime);
             }
@@ -46,9 +48,12 @@ function setupTimer() {
 
     ipcMain.on('reset-timer', () => {
         elapsedTime = 0;
+        resetCharCount();
         startTime = Date.now();
+        let textLogWindow = getTextLogWindow();
         if (textLogWindow) {
             textLogWindow.webContents.send('update-timer', elapsedTime);
+            textLogWindow.webContents.send('update-char-count', getCharCount());
         }
     });
 
@@ -58,41 +63,47 @@ function setupTimer() {
 function registerIpcHandlers() {
     ipcMain.handle("get-setting", (event, key) => getStore(key));
     ipcMain.handle("set-setting", (event, key, value) => setStore(key, value));
-    ipcMain.handle("open-text-log", () => openTextLog());
-    ipcMain.handle("add-text-log", (event, text) => addTextLog(text));
-    ipcMain.on('request-char-count', (event) => event.reply('update-char-count', charCount));
-}
-
-async function openTextLog() {
-    const { width, height } = screen.getPrimaryDisplay().size;
-
-    textLogWindow = new BrowserWindow({
-            width: width / 2,
-            height: height / 2,
-            resizable: true,
-            show: false,
-            parent: overlayWindow,
-            webPreferences: {
-                preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
-                nodeIntegration: false,
-                contextIsolation: true,
-                nativeWindowOpen: true,
-        },
+    // ipcMain.handle("open-text-log", () => showHideTextLog());
+    ipcMain.handle("add-text-log", (event, text) => {
+        addTextLog(text);
+        getTextLogWindow().webContents.send('update-text-log', text);
+        getTextLogWindow().webContents.send('update-char-count', getCharCount());
     });
-
-    textLogWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    textLogWindow.setAlwaysOnTop(true, "screen-saver", 2);
-    textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
-    // textLogWindow.openDevTools();
-
-    textLogWindow.once('ready-to-show', () => textLogWindow.show());
-    textLogWindow.on('closed', () => textLogWindow = null);
+    ipcMain.on('request-char-count', (event) => {
+        event.reply('update-char-count', getCharCount());
+    });
 }
 
-async function addTextLog(text) {
-    charCount += [...text].length;
-    setStore('textLog', [...getStore('textLog', []), text]);
-}
+// async function openTextLog() {
+//     const { width, height } = screen.getPrimaryDisplay().size;
+
+//     textLogWindow = new BrowserWindow({
+//             width: width / 2,
+//             height: height / 2,
+//             resizable: true,
+//             show: false,
+//             parent: overlayWindow,
+//             webPreferences: {
+//                 preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+//                 nodeIntegration: false,
+//                 contextIsolation: true,
+//                 nativeWindowOpen: true,
+//         },
+//     });
+
+//     textLogWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+//     textLogWindow.setAlwaysOnTop(true, "screen-saver", 2);
+//     textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
+//     // textLogWindow.openDevTools();
+
+//     textLogWindow.once('ready-to-show', () => textLogWindow.show());
+//     textLogWindow.on('closed', () => textLogWindow = null);
+// }
+
+// async function addTextLog(text) {
+//     charCount += [...text].length;
+//     setStore('textLog', [...getStore('textLog', []), text]);
+// }
 
 async function registerGlobalShortcuts() {
     globalShortcut.register('Alt+O', () => {
@@ -105,19 +116,9 @@ async function registerGlobalShortcuts() {
         overlayWindow.webContents.send('export-settings');
     });
     
-    let textLogShow = false;
     globalShortcut.register('Alt+T', () => {
         console.log('Alt+T was pressed');
-        if (!textLogWindow) {
-            openTextLog();
-            textLogShow = true;
-        } else if (textLogShow) {
-            textLogWindow.hide();
-            textLogShow = false;
-        } else {
-            textLogWindow.show();
-            textLogShow = true;
-        }
+        showHideTextLog();
     });
     
     globalShortcut.register('Alt+W', () => {
@@ -172,10 +173,12 @@ async function registerGlobalShortcuts() {
         { allowFileAccess: true }
     );
 
-    [overlayWindow, overlayHandle, gameHandle] = await initialiseWindows(
+    [overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle] = await initialiseWindows(
         partialTitle, 
-        OVERLAY_PRELOAD_WEBPACK_ENTRY, 
-        OVERLAY_WEBPACK_ENTRY
+        // OVERLAY_PRELOAD_WEBPACK_ENTRY, 
+        // OVERLAY_WEBPACK_ENTRY,
+        // TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+        // TEXT_LOG_WEBPACK_ENTRY
     );
     
     addExtensionTab(overlayWindow.webContents, overlayWindow);

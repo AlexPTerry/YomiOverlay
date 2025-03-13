@@ -1,5 +1,6 @@
 const { screen, BrowserWindow, ipcMain } = require('electron');
 
+const { setStore, getStore } = require('./settings-handler');
 const { findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils');
 const { getCurrentSettings } = require('./settings-handler');
 const { sleep } = require('./general-utils');
@@ -9,10 +10,14 @@ let clickThrough = false;
 let gameHandle;
 let overlayWindow;
 let overlayHandle;
+let textLogWindow;
+let textLogHandle;
+let textLogShow = false;
+let charCount = 0;
 
-async function createOverlayWindow(OVERLAY_PRELOAD_WEBPACK_ENTRY, OVERLAY_WEBPACK_ENTRY) {
+async function createOverlayWindow() {
     const { width, height } = screen.getPrimaryDisplay().size;
-    const overlayWindow = new BrowserWindow({
+    overlayWindow = new BrowserWindow({
         width: width,
         height: height,
         frame: false,
@@ -44,6 +49,7 @@ async function createOverlayWindow(OVERLAY_PRELOAD_WEBPACK_ENTRY, OVERLAY_WEBPAC
 
     overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
     overlayWindow.webContents.once("did-finish-load", module.exports.showHideOverlay);
+    overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
     // overlayWindow.webContents.openDevTools();
 
     // console.log('Overlay window: ', overlayWindow);
@@ -88,6 +94,80 @@ module.exports.pressSpace = async function() {
     module.exports.toggleMouseEventsSettable();
 }
 
+
+async function createTextLogWindow() {
+    const { width, height } = screen.getPrimaryDisplay().size;
+
+    textLogWindow = new BrowserWindow({
+            width: width / 2,
+            height: height / 2,
+            resizable: true,
+            show: false,
+            parent: overlayWindow,
+            webPreferences: {
+                preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+                nodeIntegration: false,
+                contextIsolation: true,
+                nativeWindowOpen: true,
+        },
+    });
+
+    textLogWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    textLogWindow.setAlwaysOnTop(true, "screen-saver", 2);
+    textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
+    // textLogWindow.openDevTools();
+
+    textLogHandle = textLogWindow.getNativeWindowHandle().readUInt32LE(0);
+
+    textLogWindow.on('closed', () => {
+        textLogWindow = null;
+        textLogHandle = null;
+        console.log('Closed text log');
+    });
+
+    return textLogWindow;
+}
+
+module.exports.showHideTextLog = function() {
+    if (!textLogWindow) {
+        createTextLogWindow(TEXT_LOG_PRELOAD_WEBPACK_ENTRY, TEXT_LOG_WEBPACK_ENTRY);
+        textLogWindow.show();
+        textLogShow = true;
+    } else if (textLogShow) {
+        textLogWindow.hide();
+        textLogShow = false;
+    } else {
+        textLogWindow.show();
+        textLogShow = true;
+    }
+}
+
+module.exports.addTextLog = async function(text) {
+    charCount += [...text].length;
+    setStore('textLog', [...getStore('textLog', []), text]);
+}
+
+module.exports.resetCharCount = function() {
+    charCount = 0;
+}
+
+module.exports.initialiseWindows = async function(
+    partialTitle,
+    // OVERLAY_PRELOAD_WEBPACK_ENTRY, 
+    // OVERLAY_WEBPACK_ENTRY,
+    // TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
+    // TEXT_LOG_WEBPACK_ENTRY
+    ) {
+    gameHandle = findWindowHandle(partialTitle);
+    // Why did I even make these async?
+    await createOverlayWindow();
+    await createTextLogWindow();
+    // console.log('Overlay window: ', overlayWindow);
+
+    return [overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle];
+
+}
+
 module.exports.getOverlayWindow = function() {
     return overlayWindow;
 }
@@ -100,16 +180,19 @@ module.exports.getGameHandle = function() {
     return gameHandle;
 }
 
-module.exports.initialiseWindows = async function(
-    partialTitle,
-    OVERLAY_PRELOAD_WEBPACK_ENTRY, 
-    OVERLAY_WEBPACK_ENTRY,
-    ) {
-    gameHandle = findWindowHandle(partialTitle);
-    overlayWindow = await createOverlayWindow(OVERLAY_PRELOAD_WEBPACK_ENTRY, OVERLAY_WEBPACK_ENTRY);
-    // console.log('Overlay window: ', overlayWindow);
-    overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
+module.exports.getTextLogWindow = function() {
+    return textLogWindow;
+}
 
-    return [overlayWindow, overlayHandle, gameHandle];
+module.exports.getTextLogHandle = function() {
+    return textLogHandle;
+}
 
+// This text log logic should be its own module, separate from the window
+module.exports.getCharCount = function() {
+    return charCount;
+}
+
+module.exports.getTextLog = function() {
+    return getStore('textLog', []);
 }

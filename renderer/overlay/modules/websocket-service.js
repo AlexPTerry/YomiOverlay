@@ -1,5 +1,6 @@
 import { updateTextContent } from './text-handler';
 
+// Move websocket stuff to the backend!
 export function setupWebSocket(electronAPI) {
     const socket = new WebSocket('ws://localhost:9001');
 
