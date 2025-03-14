@@ -1,6 +1,6 @@
 const { app, session } = require("electron");
-// const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
+// const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 
 const { loadSettings } = require('./modules/settings-handler');
 const { setupChromeExtensions } = require('./modules/chrome-extensions');

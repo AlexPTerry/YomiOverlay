@@ -41,5 +41,4 @@ export function initialiseControls(electronAPI) {
 
     // Request initial character count when settings opens
     electronAPI.requestCharCount();
-    console.log('got here');
 }

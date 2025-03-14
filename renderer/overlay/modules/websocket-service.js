@@ -1,8 +1,9 @@
 import { updateTextContent } from './text-handler';
 
-// Move websocket stuff to the backend!
+// Needs to be possible to reconnect to websocket
+// TODO: Move to backend main process
 export function setupWebSocket(electronAPI) {
-    const socket = new WebSocket('ws://localhost:9001');
+    const socket = new WebSocket('ws://localhost:9001'); // Port should be manually settable
 
     socket.onopen = () => {
         console.log('WebSocket connection established');
@@ -24,5 +25,5 @@ export function setupWebSocket(electronAPI) {
         console.log('WebSocket connection closed');
     };
     
-    return socket; // Return socket if you need to manage it externally later
+    return socket; 
 }

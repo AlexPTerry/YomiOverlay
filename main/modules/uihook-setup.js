@@ -6,11 +6,6 @@ const { sleep } = require('./general-utils');
 
 function setKeyDownEvents() {
     uIOhook.on('keydown', (e) => {
-        console.log('Key: ', e.keycode);
-        if (e.keycode === UiohookKey.Q) {
-            console.log('Hello!');
-        }
-
         // This might be causing crashes somehow?
         if (e.keycode === UiohookKey.Enter) {
             showHideOverlay();
@@ -21,9 +16,8 @@ function setKeyDownEvents() {
             // This logic should be moved to window-handler
 
             const foregroundHandle = GetForegroundWindow();
-            console.log('Space pressed');
             if (foregroundHandle === getGameHandle() || foregroundHandle === getOverlayHandle()) {
-                console.log('Interacted with window');
+                console.log('Pressed space on overlay/window');
                 pressSpace();
             }
         }
@@ -34,7 +28,7 @@ function setKeyUpEvents() {
     uIOhook.on('keyup', (e) => {
         if (e.keycode === UiohookKey.Alt) {
             (async () => {
-                await sleep(20);
+                await sleep(20); // Takes a (50th of a) sec for the foreground window to change
                 showHideOverlay();
             })();
         }

@@ -38,7 +38,7 @@ module.exports.findWindowHandle = function(partialTitle) {
             let classNameUTF8 = classBuffer.toString('utf8').replace(/\0/g, '');
     
             if (module.exports.IsWindowVisible(wHandle) && title.length > 0) {
-                windows.push(`${title} | ${className} | ${wHandle}`); // Filter out e.g. file xplorer on class name
+                windows.push(`${title} | ${className} | ${wHandle}`); // Filter out e.g. file explorer on class name
                 windows.push(`${titleUTF8} | ${classNameUTF8} | ${wHandle}`);
                 if (className.includes(partialTitle) || classNameUTF8.includes(partialTitle)) {
                     handle = wHandle; 
