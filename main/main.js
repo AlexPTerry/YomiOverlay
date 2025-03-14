@@ -3,10 +3,8 @@ const { app, session, ipcMain, BrowserWindow, screen, globalShortcut } = require
 const path = require("path");
 
 const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
-const { GetLastError, PostMessageW, GetForegroundWindow, GetWindowTextW, GetClassName, IsWindowVisible, findWindowHandle, sendWindowSpace} = require("./modules/win32-utils");
 const { setupChromeExtensions, addExtensionTab } = require('./modules/chrome-extensions');
 const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable, showHideTextLog, addTextLog, getTextLogWindow, getCharCount, resetCharCount } = require('./modules/window-handler');
-const { sleep } = require('./modules/general-utils');
 const { initialiseUIOHook } = require('./modules/uihook-setup');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -15,7 +13,6 @@ if (require('electron-squirrel-startup')) {
 }
 
 let overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle;
-let charCount = 0;
 let startTime = Date.now();
 let elapsedTime = 0;
 let timerRunning = true;
@@ -63,7 +60,6 @@ function setupTimer() {
 function registerIpcHandlers() {
     ipcMain.handle("get-setting", (event, key) => getStore(key));
     ipcMain.handle("set-setting", (event, key, value) => setStore(key, value));
-    // ipcMain.handle("open-text-log", () => showHideTextLog());
     ipcMain.handle("add-text-log", (event, text) => {
         addTextLog(text);
         getTextLogWindow().webContents.send('update-text-log', text);
@@ -73,37 +69,6 @@ function registerIpcHandlers() {
         event.reply('update-char-count', getCharCount());
     });
 }
-
-// async function openTextLog() {
-//     const { width, height } = screen.getPrimaryDisplay().size;
-
-//     textLogWindow = new BrowserWindow({
-//             width: width / 2,
-//             height: height / 2,
-//             resizable: true,
-//             show: false,
-//             parent: overlayWindow,
-//             webPreferences: {
-//                 preload: TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
-//                 nodeIntegration: false,
-//                 contextIsolation: true,
-//                 nativeWindowOpen: true,
-//         },
-//     });
-
-//     textLogWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-//     textLogWindow.setAlwaysOnTop(true, "screen-saver", 2);
-//     textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
-//     // textLogWindow.openDevTools();
-
-//     textLogWindow.once('ready-to-show', () => textLogWindow.show());
-//     textLogWindow.on('closed', () => textLogWindow = null);
-// }
-
-// async function addTextLog(text) {
-//     charCount += [...text].length;
-//     setStore('textLog', [...getStore('textLog', []), text]);
-// }
 
 async function registerGlobalShortcuts() {
     globalShortcut.register('Alt+O', () => {

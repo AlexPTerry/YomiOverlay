@@ -119,6 +119,13 @@ async function createTextLogWindow() {
 
     textLogHandle = textLogWindow.getNativeWindowHandle().readUInt32LE(0);
 
+    textLogWindow.on('close', (event) => {
+        event.preventDefault(); // Prevent the window from closing
+        textLogWindow.hide();
+        textLogShow = false;
+        console.log('Intercepted text log close');
+    })
+    
     textLogWindow.on('closed', () => {
         textLogWindow = null;
         textLogHandle = null;
@@ -130,7 +137,7 @@ async function createTextLogWindow() {
 
 module.exports.showHideTextLog = function() {
     if (!textLogWindow) {
-        createTextLogWindow(TEXT_LOG_PRELOAD_WEBPACK_ENTRY, TEXT_LOG_WEBPACK_ENTRY);
+        createTextLogWindow();
         textLogWindow.show();
         textLogShow = true;
     } else if (textLogShow) {
