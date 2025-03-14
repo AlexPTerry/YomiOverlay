@@ -1,6 +1,6 @@
 const { uIOhook, UiohookKey } = require('uiohook-napi');
 
-const { getOverlayHandle, getGameHandle, showHideOverlay, pressSpace } = require('./window-handler');
+const { getOverlayHandle, getGameHandle, showHideOverlay, pressSpace, getTextLogHandle } = require('./window-handler');
 const { GetForegroundWindow } = require('./win32-utils');
 const { sleep } = require('./general-utils');
 
@@ -17,11 +17,11 @@ function setKeyDownEvents() {
         }
 
         if (e.keycode === UiohookKey.Space) {
-            // Should also check here that text log is in focus?
+            // Should this still trigger if the text log is focused? (probably)
 
             const foregroundHandle = GetForegroundWindow();
             console.log('Space pressed');
-            if (foregroundHandle === getGameHandle() || foregroundHandle === getOverlayHandle()) {
+            if (foregroundHandle === getGameHandle() || foregroundHandle === getOverlayHandle() || foregroundHandle === getTextLogHandle()) {
                 console.log('Interacted with window');
                 pressSpace();
             }

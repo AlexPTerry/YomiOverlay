@@ -94,7 +94,6 @@ module.exports.pressSpace = async function() {
     module.exports.toggleMouseEventsSettable();
 }
 
-
 async function createTextLogWindow() {
     const { width, height } = screen.getPrimaryDisplay().size;
 
@@ -149,15 +148,6 @@ module.exports.showHideTextLog = function() {
     }
 }
 
-module.exports.addTextLog = async function(text) {
-    charCount += [...text].length;
-    setStore('textLog', [...getStore('textLog', []), text]);
-}
-
-module.exports.resetCharCount = function() {
-    charCount = 0;
-}
-
 module.exports.initialiseWindows = async function(
     partialTitle,
     // OVERLAY_PRELOAD_WEBPACK_ENTRY, 
@@ -193,13 +183,4 @@ module.exports.getTextLogWindow = function() {
 
 module.exports.getTextLogHandle = function() {
     return textLogHandle;
-}
-
-// This text log logic should be its own module, separate from the window
-module.exports.getCharCount = function() {
-    return charCount;
-}
-
-module.exports.getTextLog = function() {
-    return getStore('textLog', []);
 }

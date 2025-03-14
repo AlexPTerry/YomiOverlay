@@ -1,4 +1,4 @@
-const { screen } = require('electron');
+const { screen, ipcMain } = require('electron');
 
 let store;
 
@@ -23,6 +23,11 @@ function setDefaultSettings() {
     if (!store.get('textLog')) store.set('textLog', []);
 }
 
+function initialiseSettingsIpc() {
+    ipcMain.handle("get-setting", (event, key) => store.get(key));
+    ipcMain.handle("set-setting", (event, key, value) => store.set(key, value));
+}
+
 module.exports.getCurrentSettings = function() {
     return store.get(store.get('activeProfile'));
 }
@@ -40,5 +45,6 @@ module.exports.loadSettings = async function() {
     store = new Store();
 
     setDefaultSettings();
+    initialiseSettingsIpc();
     return module.exports.getCurrentSettings();
 }

@@ -4,7 +4,8 @@ const path = require("path");
 
 const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
 const { setupChromeExtensions, addExtensionTab } = require('./modules/chrome-extensions');
-const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable, showHideTextLog, addTextLog, getTextLogWindow, getCharCount, resetCharCount } = require('./modules/window-handler');
+const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable, showHideTextLog, getTextLogWindow } = require('./modules/window-handler');
+const { initialiseTextLog, getCharCount, resetCharCount } = require('./modules/text-log-manager');
 const { initialiseUIOHook } = require('./modules/uihook-setup');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -13,62 +14,48 @@ if (require('electron-squirrel-startup')) {
 }
 
 let overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle;
-let startTime = Date.now();
-let elapsedTime = 0;
-let timerRunning = true;
-let timerInterval;
 
 let partialTitle = 'midori'; // <--- Still needs to be set non-manually but less egregious now
 
 
-function setupTimer() {
-    function startTimer() {
-        timerInterval = setInterval(() => {
-            elapsedTime = Date.now() - startTime;
-            // console.log(textLogWindow);
-            let textLogWindow = getTextLogWindow();
-            if (textLogWindow) {
-                textLogWindow.webContents.send('update-timer', elapsedTime);
-            }
-        }, 1000);
-    }
+// function setupTimer() {
+//     function startTimer() {
+//         timerInterval = setInterval(() => {
+//             elapsedTime = Date.now() - startTime;
+//             // console.log(textLogWindow);
+//             let textLogWindow = getTextLogWindow();
+//             if (textLogWindow) {
+//                 textLogWindow.webContents.send('update-timer', elapsedTime);
+//             }
+//         }, 1000);
+//     }
 
-    ipcMain.on('toggle-timer', () => {
-        timerRunning = !timerRunning;
-        if (timerRunning) {
-            startTime = Date.now() - elapsedTime;
-            startTimer();
-        } else {
-            clearInterval(timerInterval);
-        }
-    });
+//     ipcMain.on('toggle-timer', () => {
+//         timerRunning = !timerRunning;
+//         if (timerRunning) {
+//             startTime = Date.now() - elapsedTime;
+//             startTimer();
+//         } else {
+//             clearInterval(timerInterval);
+//         }
+//     });
 
-    ipcMain.on('reset-timer', () => {
-        elapsedTime = 0;
-        resetCharCount();
-        startTime = Date.now();
-        let textLogWindow = getTextLogWindow();
-        if (textLogWindow) {
-            textLogWindow.webContents.send('update-timer', elapsedTime);
-            textLogWindow.webContents.send('update-char-count', getCharCount());
-        }
-    });
+//     ipcMain.on('reset-timer', () => {
+//         elapsedTime = 0;
+//         resetCharCount();
+//         startTime = Date.now();
+//         let textLogWindow = getTextLogWindow();
+//         if (textLogWindow) {
+//             textLogWindow.webContents.send('update-timer', elapsedTime);
+//             textLogWindow.webContents.send('update-char-count', getCharCount());
+//         }
+//     });
 
-    startTimer();
-}
+//     startTimer();
+// }
 
-function registerIpcHandlers() {
-    ipcMain.handle("get-setting", (event, key) => getStore(key));
-    ipcMain.handle("set-setting", (event, key, value) => setStore(key, value));
-    ipcMain.handle("add-text-log", (event, text) => {
-        addTextLog(text);
-        getTextLogWindow().webContents.send('update-text-log', text);
-        getTextLogWindow().webContents.send('update-char-count', getCharCount());
-    });
-    ipcMain.on('request-char-count', (event) => {
-        event.reply('update-char-count', getCharCount());
-    });
-}
+// function registerIpcHandlers() {
+// }
 
 async function registerGlobalShortcuts() {
     globalShortcut.register('Alt+O', () => {
@@ -149,9 +136,9 @@ async function registerGlobalShortcuts() {
     addExtensionTab(overlayWindow.webContents, overlayWindow);
 
     initialiseUIOHook();
-    registerIpcHandlers();
+    initialiseTextLog();
+    // registerIpcHandlers();
     registerGlobalShortcuts();
-    setupTimer();
 
 })();
 
