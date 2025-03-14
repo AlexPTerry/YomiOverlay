@@ -1,9 +1,9 @@
 const { screen, BrowserWindow, ipcMain } = require('electron');
 
-const { setStore, getStore } = require('./settings-handler');
 const { findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils');
 const { getCurrentSettings } = require('./settings-handler');
 const { sleep } = require('./general-utils');
+const { addExtensionTab } = require('./chrome-extensions');
 
 let mouseEventsSettable = true;
 let clickThrough = false;
@@ -13,7 +13,6 @@ let overlayHandle;
 let textLogWindow;
 let textLogHandle;
 let textLogShow = false;
-let charCount = 0;
 
 async function createOverlayWindow() {
     const { width, height } = screen.getPrimaryDisplay().size;
@@ -50,6 +49,8 @@ async function createOverlayWindow() {
     overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
     overlayWindow.webContents.once("did-finish-load", module.exports.showHideOverlay);
     overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
+    
+    addExtensionTab(overlayWindow.webContents, overlayWindow);
     // overlayWindow.webContents.openDevTools();
 
     // console.log('Overlay window: ', overlayWindow);
@@ -63,7 +64,7 @@ module.exports.showHideOverlay = function() {
     console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
     
     // TODO: Should allow other windows such as text log, settings etc. to show overlay
-    if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle) {
+    if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle || foregroundHandle === textLogHandle) {
         console.log('Showing window');
         overlayWindow.show();
     } else {
@@ -148,21 +149,11 @@ module.exports.showHideTextLog = function() {
     }
 }
 
-module.exports.initialiseWindows = async function(
-    partialTitle,
-    // OVERLAY_PRELOAD_WEBPACK_ENTRY, 
-    // OVERLAY_WEBPACK_ENTRY,
-    // TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
-    // TEXT_LOG_WEBPACK_ENTRY
-    ) {
+module.exports.initialiseWindows = async function(partialTitle) {
     gameHandle = findWindowHandle(partialTitle);
     // Why did I even make these async?
     await createOverlayWindow();
     await createTextLogWindow();
-    // console.log('Overlay window: ', overlayWindow);
-
-    return [overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle];
-
 }
 
 module.exports.getOverlayWindow = function() {

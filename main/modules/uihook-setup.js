@@ -17,11 +17,12 @@ function setKeyDownEvents() {
         }
 
         if (e.keycode === UiohookKey.Space) {
-            // Should this still trigger if the text log is focused? (probably)
+            // Should this still trigger if the text log is focused? (probably but would need to modify pressSpace)
+            // This logic should be moved to window-handler
 
             const foregroundHandle = GetForegroundWindow();
             console.log('Space pressed');
-            if (foregroundHandle === getGameHandle() || foregroundHandle === getOverlayHandle() || foregroundHandle === getTextLogHandle()) {
+            if (foregroundHandle === getGameHandle() || foregroundHandle === getOverlayHandle()) {
                 console.log('Interacted with window');
                 pressSpace();
             }

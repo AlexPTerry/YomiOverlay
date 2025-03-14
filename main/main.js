@@ -1,120 +1,25 @@
-const { app, session, ipcMain, BrowserWindow, screen, globalShortcut } = require("electron");
+const { app, session } = require("electron");
 // const { keyboard, getWindows, sleep, Key } = require('@nut-tree-fork/nut-js');
 const path = require("path");
 
-const { getStore, setStore, loadSettings } = require('./modules/settings-handler');
-const { setupChromeExtensions, addExtensionTab } = require('./modules/chrome-extensions');
-const { initialiseWindows, showHideOverlay, pressSpace, toggleMouseEventsSettable, showHideTextLog, getTextLogWindow } = require('./modules/window-handler');
-const { initialiseTextLog, getCharCount, resetCharCount } = require('./modules/text-log-manager');
+const { loadSettings } = require('./modules/settings-handler');
+const { setupChromeExtensions } = require('./modules/chrome-extensions');
+const { initialiseWindows } = require('./modules/window-handler');
+const { initialiseTextLog } = require('./modules/text-log-manager');
 const { initialiseUIOHook } = require('./modules/uihook-setup');
+const { registerGlobalShortcuts } = require('./modules/shortcut-registration');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
-let overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle;
-
 let partialTitle = 'midori'; // <--- Still needs to be set non-manually but less egregious now
-
-
-// function setupTimer() {
-//     function startTimer() {
-//         timerInterval = setInterval(() => {
-//             elapsedTime = Date.now() - startTime;
-//             // console.log(textLogWindow);
-//             let textLogWindow = getTextLogWindow();
-//             if (textLogWindow) {
-//                 textLogWindow.webContents.send('update-timer', elapsedTime);
-//             }
-//         }, 1000);
-//     }
-
-//     ipcMain.on('toggle-timer', () => {
-//         timerRunning = !timerRunning;
-//         if (timerRunning) {
-//             startTime = Date.now() - elapsedTime;
-//             startTimer();
-//         } else {
-//             clearInterval(timerInterval);
-//         }
-//     });
-
-//     ipcMain.on('reset-timer', () => {
-//         elapsedTime = 0;
-//         resetCharCount();
-//         startTime = Date.now();
-//         let textLogWindow = getTextLogWindow();
-//         if (textLogWindow) {
-//             textLogWindow.webContents.send('update-timer', elapsedTime);
-//             textLogWindow.webContents.send('update-char-count', getCharCount());
-//         }
-//     });
-
-//     startTimer();
-// }
-
-// function registerIpcHandlers() {
-// }
-
-async function registerGlobalShortcuts() {
-    globalShortcut.register('Alt+O', () => {
-        console.log('Alt+O was pressed');
-        overlayWindow.webContents.send('toggle-styles');
-    });
-    
-    globalShortcut.register('Alt+I', () => {
-        console.log('Alt+I was pressed');
-        overlayWindow.webContents.send('export-settings');
-    });
-    
-    globalShortcut.register('Alt+T', () => {
-        console.log('Alt+T was pressed');
-        showHideTextLog();
-    });
-    
-    globalShortcut.register('Alt+W', () => {
-        console.log('Alt+W was pressed');
-        app.quit(); 
-    });
-    
-    let overlayShow = true;
-    globalShortcut.register('Alt+S', () => {
-        console.log('Alt+S was pressed');
-        if (overlayShow) {
-            overlayWindow.hide();
-        } else {
-            overlayWindow.show();
-        }
-        overlayShow = !overlayShow;
-    });
-
-    globalShortcut.register('Alt+C', () => {
-        console.log('Alt+C was pressed');
-        toggleMouseEventsSettable();
-    });
-
-    globalShortcut.register('Alt+G', () => {
-        console.log('Alt+G was pressed');
-        overlayWindow.setIgnoreMouseEvents(false, { forward: true });
-    });
-    
-    globalShortcut.register('Alt+H', () => {
-      console.log('Alt+H was pressed');
-      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
-  });
-
-    globalShortcut.register('Alt+L', () => {
-        console.log('Alt+L was pressed');
-        pressSpace();
-    });
-
-}
 
 (async function main() {
     await app.whenReady();
 
-    let [settings, _] = await Promise.all([
+    await Promise.all([
         loadSettings(),
         setupChromeExtensions()
     ]);
@@ -125,20 +30,11 @@ async function registerGlobalShortcuts() {
         { allowFileAccess: true }
     );
 
-    [overlayWindow, overlayHandle, gameHandle, textLogWindow, textLogHandle] = await initialiseWindows(
-        partialTitle, 
-        // OVERLAY_PRELOAD_WEBPACK_ENTRY, 
-        // OVERLAY_WEBPACK_ENTRY,
-        // TEXT_LOG_PRELOAD_WEBPACK_ENTRY,
-        // TEXT_LOG_WEBPACK_ENTRY
-    );
-    
-    addExtensionTab(overlayWindow.webContents, overlayWindow);
+    await initialiseWindows(partialTitle);
 
     initialiseUIOHook();
     initialiseTextLog();
-    // registerIpcHandlers();
-    registerGlobalShortcuts();
+    registerGlobalShortcuts(app);
 
 })();
 
