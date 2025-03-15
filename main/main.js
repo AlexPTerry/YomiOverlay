@@ -13,7 +13,7 @@ if (require('electron-squirrel-startup')) {
     app.quit();
 }
 
-let partialTitle = 'midori'; // <--- Still needs to be set non-manually but less egregious now
+let partialTitle = 'EnterNameHere'; // <--- Still needs to be set non-manually but less egregious now
 
 (async function main() {
     await app.whenReady();
