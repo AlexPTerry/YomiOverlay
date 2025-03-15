@@ -1,6 +1,6 @@
 {
-  "name": "yomitan-electron-app",
-  "productName": "yomitan-electron-app",
+  "name": "yomi-overlay",
+  "productName": "YomiOverlay",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".webpack/main",
