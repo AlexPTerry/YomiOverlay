@@ -1,5 +1,9 @@
 const koffi = require('koffi');
 
+console.log('attempted koffi');
+// This is all windows only!
+if (process.platform === 'win32') {
+
 // TODO: Expose functions as pascal-case functions with QOL changes (e.g. no messing around with buffers)
 
 const user32 = koffi.load('user32.dll');
@@ -19,6 +23,7 @@ const WM_KEYDOWN = 0x0100;
 const WM_KEYUP = 0x0101;
 const VK_SPACE = 0x20;
 
+console.log('attempted definition');
 module.exports.findWindowHandle = function(partialTitle) { 
     let handle = 0;
     let windows = [];
@@ -60,4 +65,6 @@ module.exports.findWindowHandle = function(partialTitle) {
 module.exports.sendWindowSpace = async function(handle) {
     module.exports.PostMessageW(handle, WM_KEYDOWN, VK_SPACE, 0);
     module.exports.PostMessageW(handle, WM_KEYUP, VK_SPACE, 0);
+}
+
 }

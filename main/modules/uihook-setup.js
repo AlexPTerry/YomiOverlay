@@ -1,6 +1,9 @@
 const { uIOhook, UiohookKey } = require('uiohook-napi');
 
-const { getOverlayHandle, getGameHandle, showHideOverlay, pressSpace, getTextLogHandle } = require('./window-handler');
+// This mostly just calls windows stuff
+if (process.platform === 'win32') {
+
+const { getOverlayHandle, getGameHandle, showHideOverlay, pressSpace } = require('./window-handler');
 const { GetForegroundWindow } = require('./win32-utils');
 const { sleep } = require('./general-utils');
 
@@ -49,4 +52,8 @@ module.exports.initialiseUIOHook = function() {
     setKeyUpEvents();
     setMouseUpEvents();
     uIOhook.start();
+}
+
+} else {
+    module.exports.initialiseUIOHook = function() {}
 }

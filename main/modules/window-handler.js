@@ -1,6 +1,10 @@
 const { screen, BrowserWindow, ipcMain } = require('electron');
 
-const { findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils');
+let findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW;
+if (process.platform === 'win32') { // Only for windows!
+console.log('attempted import');
+({ findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils'));
+}
 const { getCurrentSettings } = require('./settings-handler');
 const { sleep } = require('./general-utils');
 const { addExtensionTab } = require('./chrome-extensions');
@@ -48,7 +52,10 @@ async function createOverlayWindow() {
 
     overlayWindow.loadURL(OVERLAY_WEBPACK_ENTRY);
     overlayWindow.webContents.once("did-finish-load", module.exports.showHideOverlay);
-    overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
+
+    if (process.platform === 'win32') {
+        overlayHandle = overlayWindow.getNativeWindowHandle().readUInt32LE(0);
+    }
     
     addExtensionTab(overlayWindow.webContents, overlayWindow);
     // overlayWindow.webContents.openDevTools();
@@ -58,18 +65,23 @@ async function createOverlayWindow() {
 }
 
 module.exports.showHideOverlay = function() {
-    const foregroundHandle = GetForegroundWindow();
-    const buffer = Buffer.alloc(256); // Allocate space for title
-    const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
-    console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
-    
-    // TODO: Should allow other windows such as text log, settings etc. to show overlay
-    if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle || foregroundHandle === textLogHandle) {
-        console.log('Showing window');
-        overlayWindow.show();
+    // Windows only functionality
+    if (process.platform === 'win32') {
+        const foregroundHandle = GetForegroundWindow();
+        const buffer = Buffer.alloc(256); // Allocate space for title
+        const length = GetWindowTextW(foregroundHandle, buffer, buffer.length);
+        console.log(`Foreground window: ${buffer.toString("ucs2").slice(0, length)}`);
+        
+        // TODO: Should allow other windows such as text log, settings etc. to show overlay
+        if (foregroundHandle === gameHandle || foregroundHandle === overlayHandle || foregroundHandle === textLogHandle) {
+            console.log('Showing window');
+            overlayWindow.show();
+        } else {
+            console.log('Hiding window');
+            overlayWindow.hide();
+        }
     } else {
-        console.log('Hiding window');
-        overlayWindow.hide();
+        overlayWindow.show();
     }
     // overlayWindow.show();
 }
@@ -88,11 +100,14 @@ module.exports.toggleMouseEventsSettable = function() {
 }
 
 module.exports.pressSpace = async function() {
-    module.exports.toggleMouseEventsSettable();
-    await sleep(10);
-    sendWindowSpace(gameHandle);
-    await sleep(20); // Have to wait slightly otherwise mouse events kick in before space is propagated
-    module.exports.toggleMouseEventsSettable();
+    // Windows only functionality
+    if (process.platform === 'win32') {
+        module.exports.toggleMouseEventsSettable();
+        await sleep(10);
+        sendWindowSpace(gameHandle);
+        await sleep(20); // Have to wait slightly otherwise mouse events kick in before space is propagated
+        module.exports.toggleMouseEventsSettable();
+    }
 }
 
 async function createTextLogWindow() {
@@ -117,7 +132,9 @@ async function createTextLogWindow() {
     textLogWindow.loadURL(TEXT_LOG_WEBPACK_ENTRY);
     // textLogWindow.openDevTools();
 
-    textLogHandle = textLogWindow.getNativeWindowHandle().readUInt32LE(0);
+    if (process.platform === 'win32') {
+        textLogHandle = textLogWindow.getNativeWindowHandle().readUInt32LE(0);
+    }
 
     textLogWindow.on('close', (event) => {
         event.preventDefault(); // Prevent the window from closing
@@ -150,7 +167,10 @@ module.exports.showHideTextLog = function() {
 }
 
 module.exports.initialiseWindows = async function(partialTitle) {
-    gameHandle = findWindowHandle(partialTitle);
+    if (process.platform === 'win32') {
+        console.log('attempted execution');
+        gameHandle = findWindowHandle(partialTitle);
+    }
     // Why did I even make these async?
     await createOverlayWindow();
     await createTextLogWindow();
