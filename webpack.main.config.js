@@ -12,7 +12,8 @@ module.exports = {
     rules: require('./webpack.rules'),
   },
   externals: {
-    'uiohook-napi': 'commonjs uiohook-napi' // Prevent Webpack from bundling it
+    'uiohook-napi': 'commonjs uiohook-napi', // Prevent Webpack from bundling it
+    'koffi': 'commonjs koffi'
   },
   plugins: [
     new CopyWebpackPlugin({

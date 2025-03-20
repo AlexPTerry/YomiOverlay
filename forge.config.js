@@ -74,7 +74,7 @@ module.exports = {
     { // This is needed to help forge package up uiohook (but not koffi or nutjs for some reason)
       name: '@timfish/forge-externals-plugin',
       config: {
-        "externals": ["uiohook-napi"],
+        "externals": ["uiohook-napi", "koffi"],
         "includeDeps": true
       }
     },
