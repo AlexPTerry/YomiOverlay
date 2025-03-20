@@ -45,7 +45,8 @@ module.exports.findWindowHandle = function(partialTitle) {
             if (module.exports.IsWindowVisible(wHandle) && title.length > 0) {
                 windows.push(`${title} | ${className} | ${wHandle}`); // Filter out e.g. file explorer on class name
                 windows.push(`${titleUTF8} | ${classNameUTF8} | ${wHandle}`);
-                if (className.includes(partialTitle) || classNameUTF8.includes(partialTitle)) {
+                if (className.includes(partialTitle) || classNameUTF8.includes(partialTitle)
+                    || title.includes(partialTitle) || titleUTF8.includes(partialTitle)) {
                     handle = wHandle; 
                     return false; // Stop when found
                 }
