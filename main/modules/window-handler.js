@@ -3,7 +3,7 @@ const { screen, BrowserWindow, ipcMain } = require('electron');
 let findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW;
 if (process.platform === 'win32') { // Only for windows!
 console.log('attempted import');
-({ findWindowHandle, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils'));
+({ findWindowHandle, findWindowHandleByPid, sendWindowSpace, GetForegroundWindow, GetWindowTextW } = require('./win32-utils'));
 }
 const { getCurrentSettings } = require('./settings-handler');
 const { sleep } = require('./general-utils');
@@ -166,10 +166,15 @@ module.exports.showHideTextLog = function() {
     }
 }
 
-module.exports.initialiseWindows = async function(partialTitle) {
+module.exports.initialiseWindows = async function(partialTitle, pid) {
     if (process.platform === 'win32') {
         console.log('attempted execution');
-        gameHandle = findWindowHandle(partialTitle);
+        if (pid) {
+            gameHandle = findWindowHandleByPid(pid);
+        } else {
+            gameHandle = findWindowHandle(partialTitle);
+        }
+        console.log(`Game handle; ${gameHandle}`);
     }
     // Why did I even make these async?
     await createOverlayWindow();

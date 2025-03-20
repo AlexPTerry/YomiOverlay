@@ -14,6 +14,7 @@ if (require('electron-squirrel-startup')) {
 }
 
 let partialTitle = 'EnterNameHere'; // <--- Still needs to be set non-manually but less egregious now
+let pid = 0; // <---- put your PID here (preferred over partialTitle)
 
 (async function main() {
     await app.whenReady();
@@ -29,7 +30,7 @@ let partialTitle = 'EnterNameHere'; // <--- Still needs to be set non-manually b
         { allowFileAccess: true }
     );
 
-    await initialiseWindows(partialTitle);
+    await initialiseWindows(partialTitle, pid);
 
     initialiseUIOHook();
     initialiseTextLog();
